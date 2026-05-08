@@ -1,0 +1,1309 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Мой примерный график</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f5f5f3; color: #1a1a1a; min-height: 100vh; }
+    .page { max-width: 760px; margin: 0 auto; padding: 2rem 1rem 4rem; }
+
+    /* Gate */
+    #gate { display: none; max-width: 320px; margin: 6rem auto; text-align: center; }
+    #gate h2 { font-size: 20px; font-weight: 500; margin-bottom: 8px; }
+    #gate p { font-size: 13px; color: #888; margin-bottom: 1.5rem; }
+    #gate input { width: 100%; border: 1px solid #ddd; border-radius: 8px; padding: 10px 14px; font-size: 15px; outline: none; margin-bottom: 10px; display: block; }
+    #gate-err { color: #e53935; font-size: 12px; margin-bottom: 10px; display: none; }
+    #gate button { width: 100%; background: #1a1a1a; color: #fff; border: none; border-radius: 8px; padding: 11px; font-size: 15px; cursor: pointer; }
+
+    /* Header */
+    .header { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 1.5rem; gap: 1rem; }
+    .header h1 { font-size: 20px; font-weight: 500; }
+    .header p { font-size: 13px; color: #888; margin-top: 3px; }
+    .auth-btn { padding: 6px 12px; border-radius: 8px; border: 1px solid #ddd; background: #fff; font-size: 13px; color: #555; cursor: pointer; white-space: nowrap; flex-shrink: 0; }
+    .auth-btn:hover { background: #f0f0f0; }
+    .auth-btn.logged { border-color: #c8e6c9; background: #f1f8e9; color: #388e3c; }
+
+    /* Admin panel */
+    .admin-panel { background: #fff; border: 1px solid #e0e0e0; border-radius: 10px; padding: 14px 16px; margin-bottom: 1.5rem; font-size: 13px; }
+    .admin-panel h3 { font-size: 14px; font-weight: 500; margin-bottom: 10px; }
+    .admin-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 8px; }
+    .admin-row label { color: #555; font-size: 13px; }
+    .admin-row input[type=date], .admin-row select { border: 1px solid #ddd; border-radius: 6px; padding: 5px 8px; font-size: 13px; outline: none; }
+    .save-btn { background: #1a1a1a; color: #fff; border: none; border-radius: 6px; padding: 6px 14px; font-size: 13px; cursor: pointer; }
+    .save-btn:hover { background: #333; }
+    .admin-hint { font-size: 12px; color: #aaa; margin-top: 2px; }
+    .admin-status { font-size: 12px; margin-top: 6px; }
+    .admin-status.ok { color: #2e7d32; }
+    .admin-status.err { color: #c62828; }
+
+    /* Bookings list */
+    .bookings-section { margin-top: 1rem; border-top: 1px solid #f0f0f0; padding-top: 10px; }
+    .bookings-section h3 { font-size: 14px; font-weight: 500; margin-bottom: 8px; }
+    .booking-row { display: flex; align-items: center; justify-content: space-between; padding: 7px 0; border-bottom: 1px solid #f5f5f5; }
+    .booking-row:last-child { border-bottom: none; }
+    .booking-info { font-size: 13px; }
+    .booking-who { font-weight: 500; }
+    .booking-when { font-size: 12px; color: #888; }
+    .booking-actions { display: flex; gap: 6px; }
+    .booking-purpose { font-size: 12px; color: #444; margin-top: 3px; }
+    .booking-privacy { font-size: 11px; color: #999; margin-top: 2px; }
+    .btn-confirm { background: #e8f5e9; color: #2e7d32; border: 1px solid #a5d6a7; border-radius: 6px; padding: 4px 10px; font-size: 12px; cursor: pointer; }
+    .btn-confirm:hover { background: #c8e6c9; }
+    .btn-reject { background: #fce4ec; color: #c62828; border: 1px solid #f48fb1; border-radius: 6px; padding: 4px 10px; font-size: 12px; cursor: pointer; }
+    .btn-reject:hover { background: #f8bbd9; }
+    .btn-edit { background: #e3f2fd; color: #1565c0; border: 1px solid #90caf9; border-radius: 6px; padding: 4px 10px; font-size: 12px; cursor: pointer; }
+    .btn-edit:hover { background: #bbdefb; }
+
+    /* Week nav */
+    .week-nav { display: flex; align-items: center; gap: 8px; margin-bottom: 1rem; }
+    .nav-btn { background: #fff; border: 1px solid #ddd; border-radius: 8px; padding: 5px 12px; cursor: pointer; font-size: 14px; color: #555; }
+    .nav-btn:hover { background: #f5f5f5; }
+    .week-label { font-size: 14px; color: #555; flex: 1; text-align: center; }
+
+    /* Legend */
+    .legend { display: flex; gap: 12px; margin-bottom: 1rem; flex-wrap: wrap; }
+    .legend-item { display: flex; align-items: center; gap: 5px; font-size: 12px; color: #777; }
+    .legend-dot { width: 10px; height: 10px; border-radius: 3px; }
+    .dot-free    { background: #e8f5e9; border: 1px solid #a5d6a7; }
+    .dot-pending { background: #fff9c4; border: 1px solid #f9a825; }
+    .dot-taken   { background: #f0f0f0; border: 1px solid #ddd; }
+    .dot-work    { background: #fce4ec; border: 1px solid #f48fb1; }
+
+    /* Planner */
+    .planner { display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(280px, 0.85fr); gap: 16px; align-items: start; }
+    .panel { background: #fff; border: 1px solid #e8e8e8; border-radius: 14px; padding: 14px; }
+    .panel h3 { font-size: 16px; font-weight: 500; margin-bottom: 10px; }
+    .panel-sub { font-size: 12px; color: #888; margin-bottom: 12px; }
+    .month-nav { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; }
+    .month-label { flex: 1; text-align: center; font-size: 14px; font-weight: 500; color: #444; text-transform: capitalize; }
+    .month-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; }
+    .weekday { text-align: center; font-size: 11px; color: #aaa; padding-bottom: 2px; }
+    .day-btn { width: 100%; min-width: 0; min-height: 68px; border: 1px solid #e6e6e6; border-radius: 12px; background: #fff; padding: 8px 14px 8px 8px; text-align: left; cursor: pointer; display: flex; flex-direction: column; justify-content: space-between; gap: 6px; position: relative; overflow: hidden; box-sizing: border-box; }
+    .day-bar { position: absolute; right: 4px; top: 7px; bottom: 7px; width: 5px; border-radius: 3px; background: #f0f0f0; overflow: hidden; pointer-events: none; }
+    .day-bar-seg { position: absolute; left: 0; right: 0; }
+    .day-btn:hover { border-color: #cfd8dc; background: #fcfcfc; }
+    .day-btn.outside { background: #fafafa; color: #bbb; cursor: default; }
+    .day-btn.disabled { background: #f7f7f7; color: #b9b9b9; cursor: default; }
+    .day-btn.selected { border-color: #90caf9; box-shadow: 0 0 0 2px rgba(144, 202, 249, 0.18); }
+    .day-btn.today { border-color: #b3e5fc; }
+    .day-top { display: flex; align-items: center; justify-content: space-between; gap: 6px; max-width: calc(100% - 10px); }
+    .day-num-big { font-size: 15px; font-weight: 500; color: #222; }
+    .day-btn.disabled .day-num-big, .day-btn.outside .day-num-big { color: inherit; }
+    .work-dot { width: 8px; height: 8px; border-radius: 999px; background: #d32f2f; flex-shrink: 0; }
+    .day-meta { font-size: 10px; color: #888; line-height: 1.2; max-width: calc(100% - 10px); }
+    .day-meta.ok { color: #2e7d32; }
+    .day-meta.full { color: #c62828; }
+    .day-meta.work { color: #8d6e63; }
+    .selected-date { font-size: 18px; font-weight: 500; margin-bottom: 4px; }
+    .selected-sub { font-size: 12px; color: #888; margin-bottom: 14px; }
+    .section-title { font-size: 13px; font-weight: 500; color: #444; margin-bottom: 8px; }
+    .window-list, .booking-list { display: flex; flex-direction: column; gap: 8px; }
+    .window-row, .visible-booking { border: 1px solid #ededed; border-radius: 10px; padding: 10px 12px; background: #fcfcfc; }
+    .visible-booking { background: #eef6ff; border-color: #bfdcff; }
+    .window-time, .visible-booking-time { font-size: 14px; font-weight: 500; color: #222; }
+    .window-hint, .visible-booking-note { font-size: 12px; color: #888; margin-top: 3px; }
+    .window-actions { margin-top: 8px; display: flex; gap: 8px; flex-wrap: wrap; }
+    .time-chip { border: 1px solid #d9e8d9; background: #f4fbf4; color: #2e7d32; border-radius: 999px; padding: 6px 10px; font-size: 12px; cursor: pointer; }
+    .time-chip:hover { background: #e8f5e9; }
+    .custom-btn { width: 100%; margin-top: 12px; background: #fff; color: #444; border: 1px dashed #c7c7c7; border-radius: 10px; padding: 10px 12px; font-size: 13px; cursor: pointer; }
+    .custom-btn:hover { background: #fafafa; }
+    .empty-state { border: 1px dashed #e1e1e1; border-radius: 10px; padding: 14px; font-size: 13px; color: #777; background: #fbfbfb; }
+    .planner-block + .planner-block { margin-top: 14px; }
+    .timeline-scroll { max-height: 520px; overflow-y: auto; padding-right: 4px; }
+    .timeline-inner { display: grid; grid-template-columns: 46px 1fr; gap: 10px; min-height: 864px; }
+    .timeline-hours, .timeline-track { position: relative; height: 864px; }
+    .timeline-hours { display: grid; grid-template-rows: repeat(24, 36px); align-content: start; }
+    .timeline-hour { height: 36px; font-size: 11px; color: #999; display: flex; align-items: flex-start; justify-content: flex-end; padding-top: 0; padding-right: 2px; transform: translateY(-6px); }
+    .timeline-track { border: 1px solid #ebebeb; border-radius: 14px; background: linear-gradient(180deg, #fff 0%, #fcfcfc 100%); overflow: hidden; }
+    .timeline-line { position: absolute; left: 0; right: 0; border-top: 1px solid #f1f1f1; }
+    .timeline-segment { position: absolute; left: 8px; right: 8px; border-radius: 10px; padding: 7px 9px; font-size: 12px; line-height: 1.2; overflow: hidden; border: 1px solid transparent; display: flex; flex-direction: column; gap: 3px; text-align: left; }
+    .timeline-segment span { pointer-events: none; }
+    .timeline-free { background: #ecf8ec; border-color: #b7d9b7; color: #2e7d32; cursor: pointer; }
+    .timeline-free:hover { background: #e2f4e2; }
+    .timeline-confirmed { background: #e9f4ff; border-color: #b9d7ff; color: #0d47a1; }
+    .timeline-pending { background: #f3f3f3; border-color: #e2e2e2; color: #666; }
+    .timeline-work { background: #fdeaea; border-color: #f2b5b5; color: #b3261e; }
+    .timeline-sleep { background: #ede7f6; border-color: #ce93d8; color: #4a148c; }
+    .timeline-past { background: #f7f7f7; border-color: #ececec; color: #b0b0b0; }
+    .timeline-time { font-weight: 500; font-size: 12px; }
+    .timeline-note { font-size: 11px; opacity: 0.9; }
+
+    /* Calendar grid */
+    .days-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 5px; }
+    .day-col { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+    .day-header { text-align: center; padding-bottom: 5px; border-bottom: 1px solid #eee; margin-bottom: 2px; }
+    .day-name { font-size: 11px; color: #aaa; }
+    .day-num { font-size: 14px; font-weight: 500; color: #1a1a1a; margin-top: 1px; }
+    .day-header.today .day-num { color: #1565c0; }
+
+    .slot { border-radius: 6px; padding: 4px 2px; text-align: center; font-size: 10px; line-height: 1.3; border: 1px solid transparent; overflow: hidden; }
+    .slot-free    { background: #e8f5e9; border-color: #a5d6a7; color: #2e7d32; cursor: pointer; }
+    .slot-free:hover { background: #c8e6c9; }
+    .slot-pending { background: #fff9c4; border-color: #f9a825; color: #795548; cursor: default; }
+    .slot-taken   { background: #f0f0f0; border-color: #ddd; color: #666; cursor: default; }
+    .slot-blocked { background: #f5f5f5; border-color: #eee; color: #ccc; cursor: default; font-size: 9px; }
+    .slot-note { display: block; font-size: 8px; white-space: normal; overflow-wrap: anywhere; }
+
+    /* Modal */
+    .modal-bg { position: fixed; inset: 0; background: rgba(0,0,0,0.4); display: flex; align-items: center; justify-content: center; z-index: 100; padding: 1rem; }
+    .modal { background: #fff; border-radius: 12px; padding: 1.5rem; width: 100%; max-width: 340px; }
+    .modal h3 { font-size: 17px; font-weight: 500; margin-bottom: 4px; }
+    .modal p { font-size: 13px; color: #777; margin-bottom: 1rem; }
+    .modal input[type=text], .modal textarea { width: 100%; border: 1px solid #ddd; border-radius: 8px; padding: 10px 12px; font-size: 15px; margin-bottom: 12px; outline: none; display: block; font: inherit; }
+    .modal input[type=time] { width: 100%; border: 1px solid #ddd; border-radius: 8px; padding: 10px 12px; font-size: 15px; margin-bottom: 12px; outline: none; display: block; font: inherit; }
+    .modal textarea { min-height: 84px; resize: vertical; }
+    .modal input[type=text]:focus, .modal input[type=time]:focus, .modal textarea:focus { border-color: #90caf9; }
+    .modal-times { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+    .modal-times label { font-size: 12px; color: #777; }
+    .modal-check { display: flex; align-items: flex-start; gap: 8px; font-size: 13px; color: #555; margin-bottom: 8px; }
+    .modal-check input { margin-top: 2px; }
+    .modal-hint { font-size: 12px; color: #999; margin-bottom: 12px; }
+    .modal-btns { display: flex; gap: 8px; justify-content: flex-end; }
+    .btn-primary { background: #1a1a1a; color: #fff; border: none; border-radius: 8px; padding: 9px 18px; font-size: 14px; cursor: pointer; }
+    .btn-secondary { background: none; color: #777; border: 1px solid #ddd; border-radius: 8px; padding: 9px 18px; font-size: 14px; cursor: pointer; }
+
+    .loader { text-align: center; padding: 3rem; color: #aaa; font-size: 14px; }
+
+    @media (max-width: 500px) {
+      .planner { grid-template-columns: 1fr; }
+      .day-btn { min-height: 60px; padding: 7px 5px; }
+      .day-num-big { font-size: 14px; }
+      .days-grid { gap: 3px; }
+      .slot { font-size: 9px; padding: 3px 1px; }
+      .day-num { font-size: 12px; }
+      .modal-times { grid-template-columns: 1fr; gap: 0; }
+    }
+  </style>
+</head>
+<body>
+<div class="page">
+
+  <div id="gate">
+    <h2>Календарь записи</h2>
+    <p>Введите пароль, чтобы открыть календарь</p>
+    <input id="gate-inp" type="password" placeholder="Пароль">
+    <div id="gate-err">Неверный пароль</div>
+    <button id="gate-btn">Войти</button>
+  </div>
+
+  <div id="root" style="display:none"><div class="loader">Загрузка...</div></div>
+
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
+<script>
+
+// ============================================================
+// CONFIG
+// ============================================================
+var GUEST_EMAIL   = 'auth@fox-aoi.xyz';
+var ADMIN_UID     = '4tQbxe4uHbeZ11apRGhBdl9UzSt2';
+
+// Слоты каждый час, с 00:00 до 24:00
+var SLOT_STEP  = 1;   // шаг в часах
+var START_HOUR = 0;   // с 00:00
+var END_HOUR   = 24;  // до 24:00
+var DEFAULT_DURATION_MIN = 60;
+var MIN_BOOKING_MINUTES  = 20;
+var SUGGESTION_STEP_MIN  = 20;
+var TIMELINE_HEIGHT_PX   = 864;
+
+// ============================================================
+// Firebase
+// ============================================================
+firebase.initializeApp({
+  apiKey: "AIzaSyBW2POEuUCjjCGjcGUAq8MUM-Z4UAjxQWE",
+  authDomain: "fox-aoi.firebaseapp.com",
+  databaseURL: "https://fox-aoi-default-rtdb.firebaseio.com",
+  projectId: "fox-aoi",
+  storageBucket: "fox-aoi.firebasestorage.app",
+  messagingSenderId: "51905315811",
+  appId: "1:51905315811:web:c42d3c542b39646a8b96d6"
+});
+
+var auth = firebase.auth();
+var db   = firebase.database();
+
+// ============================================================
+// State
+// ============================================================
+var DAYS   = ['Пн','Вт','Ср','Чт','Пт','Сб','Вс'];
+var MONTHS = ['янв','фев','мар','апр','май','июн','июл','авг','сен','окт','ноя','дек'];
+
+var monthOffset = 0;
+var selectedDate = null;
+var currentUser = null;
+var bookings    = {};   // { id: { date, time, name, activity, isAnonymous, status } }
+var workConfig  = {};   // { referenceDate }
+var sleepData   = {};   // { '2026-05-03': { start: '23:00', end: '08:00' } }
+var modal       = null;
+var editModal   = null;
+var fbStarted   = false;
+var adminStatus = '';
+var adminStatusType = '';
+var adminView = 'bookings'; // 'bookings' | 'archive'
+
+// ============================================================
+// Gate
+// ============================================================
+document.getElementById('gate-btn').addEventListener('click', checkGate);
+document.getElementById('gate-inp').addEventListener('keydown', function(e) {
+  if (e.key === 'Enter') checkGate();
+});
+
+function checkGate() {
+  var password = document.getElementById('gate-inp').value;
+  var btn = document.getElementById('gate-btn');
+  btn.disabled = true;
+  btn.textContent = '...';
+  document.getElementById('gate-err').style.display = 'none';
+  document.getElementById('gate-inp').style.borderColor = '#ddd';
+
+  firebase.auth().signInWithEmailAndPassword(GUEST_EMAIL, password)
+    .then(function() {
+      sessionStorage.setItem('auth_ok', '1');
+      openApp();
+    })
+    .catch(function() {
+      document.getElementById('gate-err').style.display = 'block';
+      document.getElementById('gate-inp').style.borderColor = '#e53935';
+      btn.disabled = false;
+      btn.textContent = 'Войти';
+    });
+}
+
+function openApp() {
+  document.getElementById('gate').style.display = 'none';
+  document.getElementById('root').style.display = 'block';
+  if (!fbStarted) {
+    fbStarted = true;
+    db.ref('bookings').on('value', function(snap) { bookings = snap.val() || {}; render(); });
+    db.ref('config').on('value', function(snap) { workConfig = snap.val() || {}; render(); });
+    db.ref('sleep').on('value', function(snap) { sleepData = snap.val() || {}; render(); });
+    auth.onAuthStateChanged(function(user) { currentUser = user; render(); });
+  }
+}
+
+if (sessionStorage.getItem('auth_ok')) {
+  // sessionStorage есть, но Firebase Auth мог слететь — проверяем
+  firebase.auth().onAuthStateChanged(function(user) {
+    if (user) {
+      openApp();
+    } else {
+      sessionStorage.removeItem('auth_ok');
+      document.getElementById('gate').style.display = 'block';
+      setTimeout(function() { document.getElementById('gate-inp').focus(); }, 50);
+    }
+  });
+} else {
+  document.getElementById('gate').style.display = 'block';
+  setTimeout(function() { document.getElementById('gate-inp').focus(); }, 50);
+}
+
+// ============================================================
+// Auth
+// ============================================================
+function login() {
+  auth.signInWithPopup(new firebase.auth.GoogleAuthProvider())
+    .catch(function(e) { alert('Ошибка: ' + e.message); });
+}
+function logout() { auth.signOut(); }
+function isAdminUser() {
+  return !!(currentUser &&
+    currentUser.uid &&
+    currentUser.uid === ADMIN_UID &&
+    currentUser.providerData.some(function(p) { return p.providerId === 'google.com'; }));
+}
+
+// ============================================================
+// Work schedule helpers
+// ============================================================
+// График 2/2: referenceDate — дата начала первой ночной смены (23:00-11:00)
+function isWorkDay(dateStr) {
+  if (!workConfig || !workConfig.referenceDate) return false;
+  var ref = new Date(workConfig.referenceDate + 'T00:00:00');
+  var d   = new Date(dateStr + 'T00:00:00');
+  var diff = Math.round((d - ref) / 86400000);
+  var pos  = ((diff % 4) + 4) % 4;
+  return pos < 2; // 0,1 = работа; 2,3 = выходной
+}
+
+function getShiftBlockedState(dateStr, time) {
+  var hour = parseInt(time.split(':')[0], 10);
+  if (isWorkDay(dateStr) && hour >= 23) return true;
+  if (isWorkDay(addDays(dateStr, -1)) && hour < 11) return true;
+  return false;
+}
+
+// ============================================================
+// Sleep schedule helpers
+// ============================================================
+function getSleepIntervals(dateStr) {
+  var intervals = [];
+  // сон, начавшийся вчера, может заканчиваться сегодня
+  var prev = sleepData[addDays(dateStr, -1)];
+  if (prev && prev.start && prev.end) {
+    var ps = parseTimeToMinutes(prev.start);
+    var pe = parseTimeToMinutes(prev.end);
+    if (ps !== null && pe !== null && ps >= pe && pe > 0) {
+      intervals.push([0, pe]);
+    }
+  }
+  // сон, начинающийся сегодня
+  var entry = sleepData[dateStr];
+  if (entry && entry.start && entry.end) {
+    var s = parseTimeToMinutes(entry.start);
+    var e = parseTimeToMinutes(entry.end);
+    if (s !== null && e !== null) {
+      if (s >= e) intervals.push([s, 1440]); // переходит через полночь
+      else        intervals.push([s, e]);
+    }
+  }
+  return intervals;
+}
+
+// ============================================================
+// Slots
+// ============================================================
+function generateSlots() {
+  var list = [];
+  for (var h = START_HOUR; h < END_HOUR; h += SLOT_STEP) {
+    list.push(pad(h) + ':00');
+  }
+  return list;
+}
+
+function pad(n) { return n < 10 ? '0' + n : '' + n; }
+function dateKey(d) { return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()); }
+function addDays(dateStr, amount) {
+  var d = new Date(dateStr + 'T00:00:00');
+  d.setDate(d.getDate() + amount);
+  return dateKey(d);
+}
+function parseTimeToMinutes(value) {
+  if (!value || !/^\d{2}:\d{2}$/.test(value)) return null;
+  var parts = value.split(':');
+  var hours = parseInt(parts[0], 10);
+  var minutes = parseInt(parts[1], 10);
+  if (hours < 0 || hours > 23 || minutes < 0 || minutes > 59) return null;
+  return hours * 60 + minutes;
+}
+function formatMinutes(minutes) {
+  if (minutes >= 1440) return '24:00';
+  var hrs = Math.floor(minutes / 60);
+  var mins = minutes % 60;
+  return pad(hrs) + ':' + pad(mins);
+}
+function roundUpMinutes(minutes, step) {
+  return Math.ceil(minutes / step) * step;
+}
+function getNowMinutes() {
+  var now = new Date();
+  return now.getHours() * 60 + now.getMinutes();
+}
+function isPastDate(dateStr) {
+  return dateStr < dateKey(new Date());
+}
+function isTodayKey(dateStr) {
+  return dateStr === dateKey(new Date());
+}
+function escapeHtml(value) {
+  return String(value || '').replace(/[&<>"']/g, function(ch) {
+    return ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[ch];
+  });
+}
+function getBookingStartTime(booking) {
+  return booking.startTime || booking.time || '00:00';
+}
+function getBookingStartMinutes(booking) {
+  return parseTimeToMinutes(getBookingStartTime(booking));
+}
+function getBookingEndDate(booking) {
+  if (booking.endDate) return booking.endDate;
+  var start = getBookingStartMinutes(booking);
+  var end = parseTimeToMinutes(booking.endTime || '');
+  if (start !== null && end !== null && end <= start) return addDays(booking.date, 1);
+  return booking.date;
+}
+function getBookingEndMinutes(booking) {
+  var start = getBookingStartMinutes(booking);
+  var end = parseTimeToMinutes(booking.endTime || '');
+  if (start === null) return null;
+  if (end === null) return Math.min(start + DEFAULT_DURATION_MIN, 1440);
+  if (getBookingEndDate(booking) !== booking.date) return 1440 + end;
+  if (end <= start) return Math.min(start + DEFAULT_DURATION_MIN, 1440);
+  return end;
+}
+function getBookingIntervalForDate(booking, dateStr) {
+  var startDate = booking.date;
+  var endDate = getBookingEndDate(booking);
+  var startMin = getBookingStartMinutes(booking);
+  var endMin = parseTimeToMinutes(booking.endTime || '');
+
+  if (!startDate || startMin === null) return null;
+  if (dateStr < startDate || dateStr > endDate) return null;
+
+  if (endDate === startDate) {
+    var safeEnd = endMin;
+    if (safeEnd === null || safeEnd <= startMin) safeEnd = Math.min(startMin + DEFAULT_DURATION_MIN, 1440);
+    return [startMin, safeEnd];
+  }
+
+  if (dateStr === startDate) return [startMin, 1440];
+  if (dateStr === endDate) return [0, endMin === null ? 0 : endMin];
+  return [0, 1440];
+}
+function getBookingEndTime(booking) {
+  var endDate = getBookingEndDate(booking);
+  var end = parseTimeToMinutes(booking.endTime || '');
+  if (end === null) {
+    end = getBookingEndMinutes(booking);
+  }
+  if (end === null) return '00:00';
+  return formatMinutes(end);
+}
+function getBookingRangeLabel(booking) {
+  var suffix = getBookingEndDate(booking) !== booking.date ? ' (след. день)' : '';
+  return getBookingStartTime(booking) + ' - ' + getBookingEndTime(booking) + suffix;
+}
+function getPublicBookingLabel(booking) {
+  if (booking.isAnonymous) return 'занято';
+  if (booking.activity) return escapeHtml(booking.activity);
+  return 'занято';
+}
+function getAdminBookingDetails(booking) {
+  var parts = [];
+  if (booking.activity) {
+    parts.push('<div class="booking-purpose">Чем заниматься: ' + escapeHtml(booking.activity) + '</div>');
+  }
+  parts.push('<div class="booking-privacy">Для других: ' + (booking.isAnonymous ? 'анонимно' : 'видно описание') + '</div>');
+  return parts.join('');
+}
+function getBookingsForDate(dateStr, includePending) {
+  return Object.keys(bookings)
+    .map(function(id) { return { id: id, data: bookings[id] }; })
+    .filter(function(entry) {
+      if (!entry.data || !getBookingIntervalForDate(entry.data, dateStr)) return false;
+      if (includePending) return entry.data.status === 'pending' || entry.data.status === 'confirmed';
+      return entry.data.status === 'confirmed';
+    })
+    .sort(function(a, b) {
+      var aInterval = getBookingIntervalForDate(a.data, dateStr) || [0, 0];
+      var bInterval = getBookingIntervalForDate(b.data, dateStr) || [0, 0];
+      return aInterval[0] - bInterval[0];
+    });
+}
+function mergeIntervals(intervals) {
+  if (!intervals.length) return [];
+  var sorted = intervals.slice().sort(function(a, b) { return a[0] - b[0]; });
+  var merged = [sorted[0].slice()];
+  for (var i = 1; i < sorted.length; i++) {
+    var current = sorted[i];
+    var last = merged[merged.length - 1];
+    if (current[0] <= last[1]) {
+      last[1] = Math.max(last[1], current[1]);
+    } else {
+      merged.push(current.slice());
+    }
+  }
+  return merged;
+}
+function getUnavailableIntervals(dateStr) {
+  var intervals = [];
+  if (isWorkDay(addDays(dateStr, -1))) intervals.push([0, 11 * 60]);
+  if (isWorkDay(dateStr)) intervals.push([23 * 60, 24 * 60]);
+  getSleepIntervals(dateStr).forEach(function(iv) { intervals.push(iv); });
+
+  getBookingsForDate(dateStr, true).forEach(function(entry) {
+    var interval = getBookingIntervalForDate(entry.data, dateStr);
+    if (interval) intervals.push(interval);
+  });
+
+  if (isTodayKey(dateStr)) {
+    intervals.push([0, Math.min(roundUpMinutes(getNowMinutes(), 5), 1440)]);
+  }
+
+  return mergeIntervals(intervals);
+}
+function getFreeIntervals(dateStr) {
+  if (isPastDate(dateStr)) return [];
+  var free = [];
+  var cursor = 0;
+  var blocked = getUnavailableIntervals(dateStr);
+  for (var i = 0; i < blocked.length; i++) {
+    var interval = blocked[i];
+    if (interval[0] > cursor) free.push([cursor, interval[0]]);
+    cursor = Math.max(cursor, interval[1]);
+  }
+  if (cursor < 1440) free.push([cursor, 1440]);
+  return free.filter(function(interval) { return interval[1] - interval[0] >= MIN_BOOKING_MINUTES; });
+}
+function hasFreeTime(dateStr) {
+  return getFreeIntervals(dateStr).length > 0;
+}
+function getSuggestedRanges(dateStr) {
+  var ranges = [];
+  var free = getFreeIntervals(dateStr);
+  for (var i = 0; i < free.length; i++) {
+    var interval = free[i];
+    var cursor = roundUpMinutes(interval[0], SUGGESTION_STEP_MIN);
+    while (cursor + DEFAULT_DURATION_MIN <= interval[1]) {
+      ranges.push([cursor, cursor + DEFAULT_DURATION_MIN]);
+      cursor += SUGGESTION_STEP_MIN;
+      if (ranges.length >= 18) return ranges;
+    }
+  }
+  return ranges;
+}
+function isRangeAvailable(dateStr, startMin, endMin) {
+  if (isPastDate(dateStr)) return false;
+  if (startMin === null || endMin === null) return false;
+  var normalizedEnd = endMin <= startMin ? endMin + 1440 : endMin;
+  if (startMin < 0 || normalizedEnd > 2880) return false;
+
+  var currentDayOverlap = !getUnavailableIntervals(dateStr).some(function(interval) {
+    return startMin < interval[1] && Math.min(normalizedEnd, 1440) > interval[0];
+  });
+  if (!currentDayOverlap) return false;
+
+  if (normalizedEnd > 1440) {
+    var nextDate = addDays(dateStr, 1);
+    return !getUnavailableIntervals(nextDate).some(function(interval) {
+      return 0 < interval[1] && (normalizedEnd - 1440) > interval[0];
+    });
+  }
+
+  return true;
+}
+function getDayAvailabilityLabel(dateStr) {
+  if (isPastDate(dateStr)) return { text: 'прошло', cls: 'full' };
+  if (hasFreeTime(dateStr)) return { text: 'есть время', cls: 'ok' };
+  var blocked = getUnavailableIntervals(dateStr);
+  if (blocked.length === 1 && blocked[0][0] === 0 && blocked[0][1] === 1440) {
+    return { text: 'лучше спросить', cls: 'full' };
+  }
+  if (getFreeIntervals(dateStr).length === 0 && (isWorkDay(dateStr) || isWorkDay(addDays(dateStr, -1)))) {
+    return { text: 'смена/нет окон', cls: 'work' };
+  }
+  return { text: 'нет окон', cls: 'full' };
+}
+function formatLongDate(dateStr) {
+  var d = new Date(dateStr + 'T00:00:00');
+  var dayNames = ['воскресенье','понедельник','вторник','среда','четверг','пятница','суббота'];
+  return dayNames[d.getDay()] + ', ' + d.getDate() + ' ' + MONTHS[d.getMonth()];
+}
+function getTimelineSources(dateStr) {
+  var sources = [];
+  if (isWorkDay(addDays(dateStr, -1))) {
+    sources.push({ start: 0, end: 11 * 60, type: 'work', label: 'работа' });
+  }
+  if (isWorkDay(dateStr)) {
+    sources.push({ start: 23 * 60, end: 24 * 60, type: 'work', label: 'работа ночью' });
+  }
+  getSleepIntervals(dateStr).forEach(function(iv) {
+    sources.push({ start: iv[0], end: iv[1], type: 'sleep', label: 'сон' });
+  });
+
+  getBookingsForDate(dateStr, true).forEach(function(entry) {
+    var interval = getBookingIntervalForDate(entry.data, dateStr);
+    sources.push({
+      start: interval ? interval[0] : null,
+      end: interval ? interval[1] : null,
+      type: entry.data.status === 'confirmed' ? 'confirmed' : 'pending',
+      label: entry.data.status === 'confirmed' ? getPublicBookingLabel(entry.data) : ''
+    });
+  });
+
+  if (isTodayKey(dateStr)) {
+    sources.push({
+      start: 0,
+      end: Math.min(roundUpMinutes(getNowMinutes(), 5), 1440),
+      type: 'past',
+      label: 'прошло'
+    });
+  }
+
+  return sources.filter(function(source) {
+    return source.start !== null && source.end !== null && source.end > source.start;
+  });
+}
+function getTimelinePriority(type) {
+  if (type === 'work') return 5;
+  if (type === 'sleep') return 4;
+  if (type === 'confirmed') return 3;
+  if (type === 'pending') return 2;
+  if (type === 'past') return 1;
+  return 0;
+}
+function getTimelineSegments(dateStr) {
+  var boundaries = [0, 1440];
+  var sources = getTimelineSources(dateStr);
+  sources.forEach(function(source) {
+    boundaries.push(source.start, source.end);
+  });
+  boundaries = boundaries.filter(function(value, index, arr) {
+    return value >= 0 && value <= 1440 && arr.indexOf(value) === index;
+  }).sort(function(a, b) { return a - b; });
+
+  var segments = [];
+  for (var i = 0; i < boundaries.length - 1; i++) {
+    var start = boundaries[i];
+    var end = boundaries[i + 1];
+    if (end <= start) continue;
+    var mid = start + ((end - start) / 2);
+    var active = sources.filter(function(source) {
+      return mid >= source.start && mid < source.end;
+    }).sort(function(a, b) {
+      return getTimelinePriority(b.type) - getTimelinePriority(a.type);
+    })[0];
+
+    var segment = active ? {
+      start: start,
+      end: end,
+      type: active.type,
+      label: active.label
+    } : {
+      start: start,
+      end: end,
+      type: 'free',
+      label: 'свободно'
+    };
+
+    var prev = segments[segments.length - 1];
+    if (prev && prev.type === segment.type && prev.label === segment.label) {
+      prev.end = segment.end;
+    } else {
+      segments.push(segment);
+    }
+  }
+  return segments;
+}
+function findNextAvailableDate(daysAhead) {
+  var start = new Date();
+  start.setHours(0, 0, 0, 0);
+  for (var i = 0; i < daysAhead; i++) {
+    var d = new Date(start);
+    d.setDate(start.getDate() + i);
+    var key = dateKey(d);
+    if (hasFreeTime(key)) return key;
+  }
+  return dateKey(start);
+}
+function ensureSelectedDate() {
+  if (selectedDate && !isPastDate(selectedDate)) return;
+  selectedDate = findNextAvailableDate(90);
+}
+function changeMonth(delta) {
+  monthOffset = Math.max(0, monthOffset + delta);
+  render();
+}
+function selectDate(dateStr) {
+  if (isPastDate(dateStr)) return;
+  selectedDate = dateStr;
+  render();
+}
+function openCustomBooking(dateStr) {
+  var free = getFreeIntervals(dateStr);
+  if (!free.length) return;
+  var start = roundUpMinutes(free[0][0], 5);
+  var end = Math.min(free[0][1], start + DEFAULT_DURATION_MIN);
+  if (end - start < MIN_BOOKING_MINUTES) {
+    start = free[0][0];
+    end = Math.min(free[0][1], start + DEFAULT_DURATION_MIN);
+  }
+  openBooking(dateStr, formatMinutes(start), formatMinutes(end));
+}
+
+// ============================================================
+// Bookings
+// ============================================================
+function openBooking(dateStr, startTime, endTime) {
+  modal = {
+    dateStr: dateStr,
+    startTime: startTime || '',
+    endTime: endTime || ''
+  };
+  render();
+  setTimeout(function() {
+    var el = document.getElementById('start-inp') || document.getElementById('name-inp');
+    if (el) el.focus();
+  }, 50);
+}
+
+// ============================================================
+// Client meta (для логов заявок)
+// ============================================================
+function getClientMeta() {
+  var ua = navigator.userAgent || '';
+  var platform = navigator.platform || '';
+  var lang = navigator.language || '';
+  var screen = window.screen ? (window.screen.width + 'x' + window.screen.height) : '';
+  var tz = '';
+  try { tz = Intl.DateTimeFormat().resolvedOptions().timeZone; } catch(e) {}
+
+  var ipServices = [
+    { url: 'https://api64.ipify.org?format=json', key: 'ip' },
+    { url: 'https://api.seeip.org/json',           key: 'ip' },
+    { url: 'https://ipapi.co/json/',               key: 'ip' }
+  ];
+
+  function tryNext(index) {
+    if (index >= ipServices.length) {
+      return Promise.resolve({ ip: 'unknown', ua: ua, platform: platform, lang: lang, screen: screen, tz: tz });
+    }
+    var svc = ipServices[index];
+    var controller = typeof AbortController !== 'undefined' ? new AbortController() : null;
+    var timer = controller ? setTimeout(function() { controller.abort(); }, 4000) : null;
+    return fetch(svc.url, controller ? { signal: controller.signal } : {})
+      .then(function(r) { clearTimeout(timer); return r.json(); })
+      .then(function(data) {
+        var ip = data[svc.key] || 'unknown';
+        return { ip: ip, ua: ua, platform: platform, lang: lang, screen: screen, tz: tz };
+      })
+      .catch(function() { clearTimeout(timer); return tryNext(index + 1); });
+  }
+
+  return tryNext(0);
+}
+
+// ============================================================
+// Mini day bar
+// ============================================================
+function getMiniDayBar(dateStr, inMonth) {
+  if (!inMonth) return '';
+  var segments = getTimelineSegments(dateStr);
+  var bars = '';
+  segments.forEach(function(seg) {
+    var topPct  = (seg.start / 1440) * 100;
+    var hPct    = ((seg.end - seg.start) / 1440) * 100;
+    if (hPct < 0.5) return;
+    var color = '';
+    if      (seg.type === 'work')      color = '#f2b5b5';
+    else if (seg.type === 'sleep')     color = '#ce93d8';
+    else if (seg.type === 'confirmed') color = '#90caf9';
+    else if (seg.type === 'pending')   color = '#ffd54f';
+    else if (seg.type === 'past')      color = '#ddd';
+    else return; // free — нет цвета, фон уже #f0f0f0
+    bars += '<div class="day-bar-seg" style="top:' + topPct.toFixed(2) + '%;height:' + hPct.toFixed(2) + '%;background:' + color + '"></div>';
+  });
+  return '<div class="day-bar">' + bars + '</div>';
+}
+
+function confirmBookingForm() {
+  var startInp = document.getElementById('start-inp');
+  var endInp = document.getElementById('end-inp');
+  var nameInp = document.getElementById('name-inp');
+  var activityInp = document.getElementById('activity-inp');
+  var anonInp = document.getElementById('anon-inp');
+  var startMin = parseTimeToMinutes(startInp.value);
+  var endMin = parseTimeToMinutes(endInp.value);
+  var normalizedEndMin = (startMin !== null && endMin !== null && endMin <= startMin) ? endMin + 1440 : endMin;
+  var name = nameInp.value.trim();
+  var activity = activityInp.value.trim();
+
+  startInp.style.borderColor = '#ddd';
+  endInp.style.borderColor = '#ddd';
+  nameInp.style.borderColor = '#ddd';
+  activityInp.style.borderColor = '#ddd';
+
+  if (startMin === null) {
+    startInp.style.borderColor = '#e53935';
+    return;
+  }
+  if (endMin === null) {
+    endInp.style.borderColor = '#e53935';
+    return;
+  }
+  if (endMin === startMin) {
+    endInp.style.borderColor = '#e53935';
+    alert('Время окончания должно отличаться от времени начала.');
+    return;
+  }
+  if (normalizedEndMin - startMin < MIN_BOOKING_MINUTES) {
+    endInp.style.borderColor = '#e53935';
+    alert('Минимальная длительность записи — ' + MIN_BOOKING_MINUTES + ' минут.');
+    return;
+  }
+  if (!name) {
+    nameInp.style.borderColor = '#e53935';
+    return;
+  }
+  if (!activity) {
+    activityInp.style.borderColor = '#e53935';
+    return;
+  }
+  if (!isRangeAvailable(modal.dateStr, startMin, endMin)) {
+    startInp.style.borderColor = '#e53935';
+    endInp.style.borderColor = '#e53935';
+    alert('Это время уже занято или недоступно. Выберите другой интервал.');
+    return;
+  }
+
+  var endDate = normalizedEndMin > 1440 ? addDays(modal.dateStr, 1) : modal.dateStr;
+
+  var submitBtn = document.querySelector('.btn-primary');
+  if (submitBtn) { submitBtn.disabled = true; submitBtn.textContent = '...'; }
+
+  var bookingData = {
+    date: modal.dateStr,
+    time: formatMinutes(startMin),
+    startTime: formatMinutes(startMin),
+    endTime: formatMinutes(normalizedEndMin > 1440 ? normalizedEndMin - 1440 : normalizedEndMin),
+    endDate: endDate,
+    name: name,
+    activity: activity,
+    isAnonymous: !!anonInp.checked,
+    status: 'pending',
+    ts: Date.now()
+  };
+
+  getClientMeta().then(function(meta) {
+    bookingData._meta = meta;
+    return db.ref('bookings').push(bookingData);
+  }).then(function() {
+    modal = null;
+    render();
+  }).catch(function(error) {
+    if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = 'подтвердить'; }
+    alert('Не удалось создать запись: ' + error.message);
+  });
+}
+
+function confirmBooking(id) {
+  db.ref('bookings/' + id + '/status').set('confirmed');
+}
+
+function rejectBooking(id) {
+  db.ref('bookings/' + id).remove();
+}
+
+function openEditBooking(id) {
+  var b = bookings[id];
+  if (!b) return;
+  editModal = {
+    id: id,
+    date: b.date || '',
+    startTime: b.startTime || b.time || '',
+    endTime: b.endTime || '',
+    name: b.name || '',
+    activity: b.activity || '',
+    isAnonymous: !!b.isAnonymous,
+    status: b.status || 'pending'
+  };
+  render();
+  setTimeout(function() {
+    var el = document.getElementById('edit-start-inp');
+    if (el) el.focus();
+  }, 50);
+}
+
+function saveEditedBooking() {
+  if (!editModal) return;
+  var id = editModal.id;
+  var dateInp = document.getElementById('edit-date-inp').value;
+  var startInp = document.getElementById('edit-start-inp').value;
+  var endInp = document.getElementById('edit-end-inp').value;
+  var nameInp = document.getElementById('edit-name-inp').value.trim();
+  var activityInp = document.getElementById('edit-activity-inp').value.trim();
+  var anonInp = document.getElementById('edit-anon-inp').checked;
+  var statusInp = document.getElementById('edit-status-inp').value;
+
+  var startMin = parseTimeToMinutes(startInp);
+  var endMin = parseTimeToMinutes(endInp);
+  var normalizedEndMin = (startMin !== null && endMin !== null && endMin <= startMin) ? endMin + 1440 : endMin;
+
+  // Basic validation
+  if (!dateInp) { alert('Укажи дату'); return; }
+  if (startMin === null) { alert('Укажи время начала'); return; }
+  if (endMin === null) { alert('Укажи время окончания'); return; }
+  if (endMin === startMin) { alert('Время начала и конца не должны совпадать'); return; }
+  if (normalizedEndMin - startMin < MIN_BOOKING_MINUTES) { alert('Минимальная длительность — ' + MIN_BOOKING_MINUTES + ' мин.'); return; }
+  if (!nameInp) { alert('Укажи имя'); return; }
+  if (!activityInp) { alert('Укажи активность'); return; }
+
+  var endDate = normalizedEndMin > 1440 ? addDays(dateInp, 1) : dateInp;
+
+  var saveBtn = document.getElementById('edit-save-btn');
+  if (saveBtn) { saveBtn.disabled = true; saveBtn.textContent = '...'; }
+
+  var updated = {
+    date: dateInp,
+    time: formatMinutes(startMin),
+    startTime: formatMinutes(startMin),
+    endTime: formatMinutes(normalizedEndMin > 1440 ? normalizedEndMin - 1440 : normalizedEndMin),
+    endDate: endDate,
+    name: nameInp,
+    activity: activityInp,
+    isAnonymous: anonInp,
+    status: statusInp,
+    ts: bookings[id] ? bookings[id].ts : Date.now(),
+    _meta: bookings[id] ? (bookings[id]._meta || null) : null
+  };
+
+  db.ref('bookings/' + id).update(updated)
+    .then(function() {
+      editModal = null;
+      render();
+    })
+    .catch(function(err) {
+      if (saveBtn) { saveBtn.disabled = false; saveBtn.textContent = 'Сохранить'; }
+      alert('Ошибка: ' + err.message);
+    });
+}
+
+function closeEditModal() { editModal = null; render(); }
+
+function closeModal() { modal = null; render(); }
+
+// ============================================================
+// Admin: save work schedule
+// ============================================================
+function saveWorkConfig() {
+  var refDate = document.getElementById('ref-date').value;
+  if (!refDate) { alert('Выберите дату'); return; }
+  adminStatus = 'Сохраняю...';
+  adminStatusType = '';
+  render();
+  db.ref('config').set({ referenceDate: refDate })
+    .then(function() {
+      adminStatus = 'График сохранён.';
+      adminStatusType = 'ok';
+      render();
+    })
+    .catch(function(error) {
+      adminStatus = 'Не удалось сохранить: ' + error.message;
+      adminStatusType = 'err';
+      render();
+    });
+}
+
+function saveSleep(dateStr) {
+  var s = document.getElementById('sleep-s').value;
+  var e = document.getElementById('sleep-e').value;
+  if (!s || !e) { alert('Укажи оба времени'); return; }
+  db.ref('sleep/' + dateStr).set({ start: s, end: e }).catch(function(err) {
+    alert('Ошибка: ' + err.message);
+  });
+}
+
+function deleteSleep(dateStr) {
+  db.ref('sleep/' + dateStr).remove().catch(function(err) {
+    alert('Ошибка: ' + err.message);
+  });
+}
+
+// ============================================================
+// Helpers
+// ============================================================
+function isToday(d) { return dateKey(d) === dateKey(new Date()); }
+function isBookingPast(b) {
+  var endDate = getBookingEndDate(b);
+  return endDate < dateKey(new Date());
+}
+function toggleAdminView(v) { adminView = v; render(); }
+
+// ============================================================
+// Render
+// ============================================================
+function render() {
+  var root = document.getElementById('root');
+  if (!root || root.style.display === 'none') return;
+  ensureSelectedDate();
+
+  var monthBase = new Date();
+  monthBase = new Date(monthBase.getFullYear(), monthBase.getMonth() + monthOffset, 1);
+  var monthStart = new Date(monthBase.getFullYear(), monthBase.getMonth(), 1);
+  var monthEnd = new Date(monthBase.getFullYear(), monthBase.getMonth() + 1, 0);
+  var gridStart = new Date(monthStart);
+  var startDow = gridStart.getDay();
+  var startDiff = startDow === 0 ? -6 : 1 - startDow;
+  gridStart.setDate(gridStart.getDate() + startDiff);
+
+  var calendarDays = [];
+  for (var dayIndex = 0; dayIndex < 42; dayIndex++) {
+    var cellDate = new Date(gridStart);
+    cellDate.setDate(gridStart.getDate() + dayIndex);
+    calendarDays.push(cellDate);
+  }
+
+  var selectedFree = getFreeIntervals(selectedDate);
+  var timelineSegments = getTimelineSegments(selectedDate);
+  var publicBookings = getBookingsForDate(selectedDate, false);
+  var selectedDateObj = new Date(selectedDate + 'T00:00:00');
+  var monthLabel = MONTHS[monthStart.getMonth()] + ' ' + monthStart.getFullYear();
+
+  var html = '';
+
+  // Header
+  html += '<div class="header"><div>' +
+  '<h1>Когда я обычно свободен</h1>' +
+  '<p>Это примерный график, чтобы было проще пересекаться, ЧАСОВОЙ ПОЯС - ЕКАТЕРИНБУРГ, GMT+5, МСК + 2</p>' +
+  '<p style="font-size:12px;color:#999;margin-top:4px;">не строгая запись — можно просто написать вне слотов :)</p>' +
+  '</div>';
+  html += '<div style="display:flex;align-items:center;gap:8px;flex-shrink:0">';
+  html += '<a href="https://kkqr77.github.io/fox-aoi/wishlist/" style="text-decoration:none;"><button class="auth-btn" style="background:#f5f0ff;border-color:#d8b4fe;color:#7c3aed;white-space:nowrap">🎁 Вишлист</button></a>';
+  if (currentUser) {
+    html += '<button class="auth-btn logged" onclick="logout()">✓ ' + (currentUser.displayName || 'Выйти') + ' — выйти</button>';
+  } else {
+    html += '<button class="auth-btn" onclick="login()">Вход для админа</button>';
+  }
+  html += '</div>';
+  html += '</div>';
+
+  // Admin panel
+  if (isAdminUser()) {
+    var pendingBookings = Object.keys(bookings).filter(function(id) { return bookings[id].status === 'pending' && !isBookingPast(bookings[id]); });
+    var confirmedBookings = Object.keys(bookings).filter(function(id) { return bookings[id].status === 'confirmed' && !isBookingPast(bookings[id]); });
+    var archivedBookings = Object.keys(bookings).filter(function(id) { return isBookingPast(bookings[id]); }).sort(function(a, b) {
+      return (bookings[b].date || '') > (bookings[a].date || '') ? 1 : -1;
+    });
+
+    html += '<div class="admin-panel">';
+
+    // Tab switcher
+    html += '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">';
+    html += '<div style="display:flex;gap:6px">';
+    html += '<button onclick="toggleAdminView(\'bookings\')" style="padding:5px 12px;border-radius:6px;border:1px solid ' + (adminView === 'bookings' ? '#1a1a1a' : '#ddd') + ';background:' + (adminView === 'bookings' ? '#1a1a1a' : '#fff') + ';color:' + (adminView === 'bookings' ? '#fff' : '#555') + ';font-size:13px;cursor:pointer">Заявки' + (pendingBookings.length > 0 ? ' <span style="background:#f9a825;color:#fff;border-radius:999px;padding:1px 6px;font-size:11px">' + pendingBookings.length + '</span>' : '') + '</button>';
+    html += '<button onclick="toggleAdminView(\'archive\')" style="padding:5px 12px;border-radius:6px;border:1px solid ' + (adminView === 'archive' ? '#1a1a1a' : '#ddd') + ';background:' + (adminView === 'archive' ? '#1a1a1a' : '#fff') + ';color:' + (adminView === 'archive' ? '#fff' : '#555') + ';font-size:13px;cursor:pointer">Архив' + (archivedBookings.length > 0 ? ' <span style="background:#aaa;color:#fff;border-radius:999px;padding:1px 6px;font-size:11px">' + archivedBookings.length + '</span>' : '') + '</button>';
+    html += '</div></div>';
+
+    if (adminView === 'bookings') {
+      html += '<h3>График занятости</h3>';
+      html += '<div class="admin-row">';
+      html += '<label>Первый рабочий день (2/2):</label>';
+      html += '<input type="date" id="ref-date" value="' + (workConfig.referenceDate || '') + '">';
+      html += '</div>';
+      html += '<div class="admin-hint">Цикл 2/2, ночная смена 23:00-11:00.</div>';
+      html += '<div style="margin-top:8px"><button class="save-btn" onclick="saveWorkConfig()">Сохранить</button></div>';
+      if (adminStatus) {
+        html += '<div class="admin-status' + (adminStatusType ? ' ' + adminStatusType : '') + '">' + escapeHtml(adminStatus) + '</div>';
+      }
+
+      if (pendingBookings.length > 0 || confirmedBookings.length > 0) {
+        html += '<div class="bookings-section">';
+        if (pendingBookings.length > 0) {
+          html += '<h3>Ожидают подтверждения (' + pendingBookings.length + ')</h3>';
+          pendingBookings.forEach(function(id) {
+            var b = bookings[id];
+            html += '<div class="booking-row"><div class="booking-info"><div class="booking-who">' + escapeHtml(b.name || 'Без имени') + '</div><div class="booking-when">' + escapeHtml(b.date + ' в ' + getBookingRangeLabel(b)) + '</div>' + getAdminBookingDetails(b) + '</div>' +
+              '<div class="booking-actions"><button class="btn-edit" onclick="openEditBooking(\'' + id + '\')">✏️</button><button class="btn-confirm" onclick="confirmBooking(\'' + id + '\')">Подтвердить</button><button class="btn-reject" onclick="rejectBooking(\'' + id + '\')">Отклонить</button></div></div>';
+          });
+        }
+        if (confirmedBookings.length > 0) {
+          html += '<h3 style="margin-top:8px">Подтверждённые (' + confirmedBookings.length + ')</h3>';
+          confirmedBookings.forEach(function(id) {
+            var b = bookings[id];
+            html += '<div class="booking-row"><div class="booking-info"><div class="booking-who">' + escapeHtml(b.name || 'Без имени') + '</div><div class="booking-when">' + escapeHtml(b.date + ' в ' + getBookingRangeLabel(b)) + '</div>' + getAdminBookingDetails(b) + '</div>' +
+              '<div class="booking-actions"><button class="btn-edit" onclick="openEditBooking(\'' + id + '\')">✏️</button><button class="btn-reject" onclick="rejectBooking(\'' + id + '\')">Удалить</button></div></div>';
+          });
+        }
+        html += '</div>';
+      } else {
+        html += '<div style="margin-top:10px;font-size:13px;color:#aaa">Активных заявок нет.</div>';
+      }
+    } else {
+      // Archive view
+      html += '<h3>Архив прошедших событий (' + archivedBookings.length + ')</h3>';
+      if (archivedBookings.length > 0) {
+        html += '<div class="bookings-section">';
+        archivedBookings.forEach(function(id) {
+          var b = bookings[id];
+          var statusLabel = b.status === 'confirmed' ? '<span style="color:#2e7d32;font-size:11px">✓ подтверждено</span>' : '<span style="color:#888;font-size:11px">не подтверждено</span>';
+          html += '<div class="booking-row"><div class="booking-info"><div class="booking-who">' + escapeHtml(b.name || 'Без имени') + ' ' + statusLabel + '</div><div class="booking-when">' + escapeHtml(b.date + ' в ' + getBookingRangeLabel(b)) + '</div>' + getAdminBookingDetails(b) + '</div>' +
+            '<div class="booking-actions"><button class="btn-edit" onclick="openEditBooking(\'' + id + '\')">✏️</button><button class="btn-reject" onclick="rejectBooking(\'' + id + '\')">Удалить</button></div></div>';
+        });
+        html += '</div>';
+      } else {
+        html += '<div style="margin-top:10px;font-size:13px;color:#aaa">Архив пуст.</div>';
+      }
+    }
+
+    html += '</div>';
+  }
+
+  // Legend
+  html += '<div class="legend">' +
+    '<div class="legend-item"><div class="legend-dot dot-free"></div>Свободно</div>' +
+    '<div class="legend-item"><div class="legend-dot dot-taken"></div>Занято</div>' +
+    '<div class="legend-item"><div class="legend-dot dot-work"></div>На работе</div>' +
+    '</div>';
+
+  html += '<div class="planner">';
+
+  html += '<div class="panel">';
+  html += '<div class="month-nav">' +
+    '<button class="nav-btn" onclick="changeMonth(-1)"' + (monthOffset === 0 ? ' disabled' : '') + '>←</button>' +
+    '<div class="month-label">' + escapeHtml(monthLabel) + '</div>' +
+    '<button class="nav-btn" onclick="changeMonth(1)">→</button>' +
+    '</div>';
+  html += '<div class="panel-sub">Показываются только будущие даты. Выберите день, чтобы посмотреть свободное время.</div>';
+  html += '<div class="month-grid">';
+  for (var wd = 0; wd < DAYS.length; wd++) {
+    html += '<div class="weekday">' + DAYS[wd] + '</div>';
+  }
+  calendarDays.forEach(function(day) {
+    var key = dateKey(day);
+    var inMonth = day.getMonth() === monthStart.getMonth();
+    var past = isPastDate(key);
+    var selected = key === selectedDate;
+    var availability = getDayAvailabilityLabel(key);
+    var hasWorkDot = isWorkDay(key);
+    var classes = ['day-btn'];
+    if (!inMonth) classes.push('outside');
+    if (past) classes.push('disabled');
+    if (selected) classes.push('selected');
+    if (isToday(day)) classes.push('today');
+
+    html += '<button class="' + classes.join(' ') + '"' +
+      (inMonth && !past ? ' onclick="selectDate(\'' + key + '\')"' : ' disabled') + '>' +
+      '<div class="day-top"><div class="day-num-big">' + day.getDate() + '</div></div>' +
+      getMiniDayBar(key, inMonth) +
+      '</button>';
+  });
+  html += '</div>';
+  html += '</div>';
+
+  html += '<div class="panel">';
+  html += '<div class="selected-date">' + escapeHtml(formatLongDate(selectedDate)) + '</div>';
+  html += '<div class="selected-sub">' + (isToday(selectedDateObj) ? 'Сегодня' : 'Выбранная дата') + '. пока не подтвердил — это видно только мне</div>';
+
+  if (isAdminUser()) {
+    var existingSleep = sleepData[selectedDate];
+    html += '<div class="planner-block">';
+    html += '<div class="section-title">Сон</div>';
+    if (existingSleep) {
+      html += '<div class="visible-booking" style="background:#f3e5f5;border-color:#ce93d8;margin-bottom:8px">' +
+        '<div class="visible-booking-time" style="color:#4a148c">😴 ' + escapeHtml(existingSleep.start) + ' — ' + escapeHtml(existingSleep.end) + '</div>' +
+        '<button class="btn-reject" style="margin-top:6px" onclick="deleteSleep(\'' + selectedDate + '\')">Убрать</button>' +
+        '</div>';
+    }
+    html += '<div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">' +
+      '<input type="time" id="sleep-s" step="300" value="' + (existingSleep ? existingSleep.start : '') + '" style="border:1px solid #ddd;border-radius:6px;padding:5px 8px;font-size:13px">' +
+      '<span style="font-size:12px;color:#888">до</span>' +
+      '<input type="time" id="sleep-e" step="300" value="' + (existingSleep ? existingSleep.end : '') + '" style="border:1px solid #ddd;border-radius:6px;padding:5px 8px;font-size:13px">' +
+      '<button class="save-btn" onclick="saveSleep(\'' + selectedDate + '\')">' + (existingSleep ? 'Обновить' : 'Добавить') + '</button>' +
+      '</div>';
+    html += '<div style="font-size:11px;color:#aaa;margin-top:4px">переход через полночь учитывается автоматически</div>';
+    html += '</div>';
+  }
+
+  html += '<div class="planner-block">';
+  html += '<div class="section-title">Свободные окна</div>';
+  if (selectedFree.length > 0) {
+    html += '<div class="window-list">';
+    selectedFree.forEach(function(interval) {
+      var quickEnd = Math.min(interval[1], interval[0] + DEFAULT_DURATION_MIN);
+      var quickLabel = (quickEnd - interval[0] >= DEFAULT_DURATION_MIN) ? 'Быстро на час' : 'Выбрать окно';
+      html += '<div class="window-row"><div class="window-time">' + formatMinutes(interval[0]) + ' - ' + formatMinutes(interval[1]) + '</div>' +
+        '<div class="window-hint">Если нужно, можно выбрать любое время внутри этого интервала.</div>' +
+        '<div class="window-actions"><button class="time-chip" onclick="openBooking(\'' + selectedDate + '\',\'' + formatMinutes(interval[0]) + '\',\'' + formatMinutes(quickEnd) + '\')">' + quickLabel + '</button></div></div>';
+    });
+    html += '</div>';
+    html += '<button class="custom-btn" onclick="openCustomBooking(\'' + selectedDate + '\')">Выбрать своё время</button>';
+  } else {
+    html += '<div class="empty-state">пока не получилось найти окно :( попробуй соседний день</div>';
+  }
+  html += '</div>';
+
+  html += '<div class="planner-block">';
+  html += '<div class="section-title">График дня</div>';
+  html += '<div class="timeline-scroll"><div class="timeline-inner">';
+  html += '<div class="timeline-hours">';
+  for (var hour = 0; hour < 24; hour++) {
+    html += '<div class="timeline-hour">' + formatMinutes(hour * 60) + '</div>';
+  }
+  html += '</div>';
+  html += '<div class="timeline-track">';
+  for (var lineHour = 0; lineHour <= 24; lineHour++) {
+    var lineTop = (lineHour / 1440) * TIMELINE_HEIGHT_PX;
+    html += '<div class="timeline-line" style="top:' + lineTop + 'px"></div>';
+  }
+  timelineSegments.forEach(function(segment) {
+    var top = (segment.start / 1440) * TIMELINE_HEIGHT_PX;
+    var height = Math.max(((segment.end - segment.start) / 1440) * TIMELINE_HEIGHT_PX, 8);
+    var duration = segment.end - segment.start;
+    var showNote = duration >= 45 && !!segment.label;
+    var segmentLabel = segment.type === 'free' ? 'свободно' : segment.label;
+    var innerHtml = '<span class="timeline-time">' + formatMinutes(segment.start) + ' - ' + formatMinutes(segment.end) + '</span>' +
+      (showNote ? '<span class="timeline-note">' + segmentLabel + '</span>' : '');
+
+    if (segment.type === 'free') {
+      var freeEnd = Math.min(segment.end, segment.start + DEFAULT_DURATION_MIN);
+      html += '<button class="timeline-segment timeline-free" style="top:' + top + 'px;height:' + height + 'px" onclick="openBooking(\'' + selectedDate + '\',\'' + formatMinutes(segment.start) + '\',\'' + formatMinutes(freeEnd) + '\')">' + innerHtml + '</button>';
+    } else {
+      html += '<div class="timeline-segment timeline-' + segment.type + '" style="top:' + top + 'px;height:' + height + 'px">' + innerHtml + '</div>';
+    }
+  });
+  html += '</div></div></div>';
+  html += '</div>';
+
+  html += '<div class="planner-block">';
+  html += '<div class="section-title">примерные планы:</div>';
+  if (publicBookings.length > 0) {
+    html += '<div class="booking-list">';
+    publicBookings.forEach(function(entry) {
+      html += '<div class="visible-booking"><div class="visible-booking-time">' + escapeHtml(getBookingRangeLabel(entry.data)) + '</div>' +
+        '<div class="visible-booking-note">' + getPublicBookingLabel(entry.data) + '</div></div>';
+    });
+    html += '</div>';
+  } else {
+    html += '<div class="empty-state">Подтверждённых записей на эту дату пока нет.</div>';
+  }
+  html += '</div>';
+
+  html += '</div>';
+  html += '</div>';
+
+  // Edit booking modal
+  if (editModal) {
+    html += '<div class="modal-bg" onclick="if(event.target===this)closeEditModal()">' +
+      '<div class="modal"><h3>Редактировать заявку</h3>' +
+      '<p style="margin-bottom:8px">Изменение данных заявки</p>' +
+      '<label style="font-size:12px;color:#777;display:block;margin-bottom:4px">Дата</label>' +
+      '<input id="edit-date-inp" type="date" style="width:100%;border:1px solid #ddd;border-radius:8px;padding:10px 12px;font-size:15px;margin-bottom:12px;outline:none;display:block;font:inherit" value="' + escapeHtml(editModal.date) + '">' +
+      '<div class="modal-times">' +
+      '<label>Начало<input id="edit-start-inp" type="time" step="300" value="' + escapeHtml(editModal.startTime) + '"></label>' +
+      '<label>Конец<input id="edit-end-inp" type="time" step="300" value="' + escapeHtml(editModal.endTime) + '"></label>' +
+      '</div>' +
+      '<input id="edit-name-inp" type="text" placeholder="Имя" maxlength="40" value="' + escapeHtml(editModal.name) + '">' +
+      '<textarea id="edit-activity-inp" placeholder="Что хочет поделать" maxlength="160">' + escapeHtml(editModal.activity) + '</textarea>' +
+      '<label class="modal-check"><input id="edit-anon-inp" type="checkbox"' + (editModal.isAnonymous ? ' checked' : '') + '><span>Скрыть детали от других</span></label>' +
+      '<label style="font-size:12px;color:#777;display:block;margin-bottom:8px">Статус: ' +
+      '<select id="edit-status-inp" style="border:1px solid #ddd;border-radius:6px;padding:4px 8px;font-size:13px;margin-left:4px">' +
+      '<option value="pending"' + (editModal.status === 'pending' ? ' selected' : '') + '>Ожидает</option>' +
+      '<option value="confirmed"' + (editModal.status === 'confirmed' ? ' selected' : '') + '>Подтверждена</option>' +
+      '</select></label>' +
+      '<div class="modal-btns">' +
+      '<button class="btn-secondary" onclick="closeEditModal()">Отмена</button>' +
+      '<button id="edit-save-btn" class="btn-primary" onclick="saveEditedBooking()">Сохранить</button>' +
+      '</div></div></div>';
+  }
+
+  // Booking modal
+  if (modal) {
+    html += '<div class="modal-bg" onclick="if(event.target===this)closeModal()">' +
+      '<div class="modal"><h3>предложить время</h3><p>' + escapeHtml(modal.dateStr) + '</p>' +
+      '<div class="modal-times">' +
+      '<label>Начало<input id="start-inp" type="time" step="300" value="' + escapeHtml(modal.startTime || '') + '"></label>' +
+      '<label>Конец<input id="end-inp" type="time" step="300" value="' + escapeHtml(modal.endTime || '') + '"></label>' +
+      '</div>' +
+      '<input id="name-inp" type="text" placeholder="кто ты?" maxlength="40" onkeydown="if(event.key===\'Enter\')confirmBookingForm()">' +
+      '<textarea id="activity-inp" placeholder="что хочешь поделать" maxlength="160"></textarea>' +
+      '<label class="modal-check"><input id="anon-inp" type="checkbox"><span>скрыть детали от других</span></label>' +
+      '<div class="modal-hint">Если время окончания меньше времени начала, запись считается до следующего дня. Пока заявка не подтверждена, её не видно другим. Если скрыть детали, после подтверждения другие увидят только занятое время.</div>' +
+      '<div class="modal-btns">' +
+      '<button class="btn-secondary" onclick="closeModal()">Отмена</button>' +
+      '<button class="btn-primary" onclick="confirmBookingForm()">подтвердить</button>' +
+      '</div></div></div>';
+  }
+
+  root.innerHTML = html;
+}
+
+</script>
+</body>
+</html>

@@ -1,0 +1,795 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Вишлист 🎁</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f5f5f3; color: #1a1a1a; min-height: 100vh; }
+    .page { max-width: 960px; margin: 0 auto; padding: 2rem 1rem 4rem; }
+
+    /* ── Gate ── */
+    #gate { display: none; max-width: 320px; margin: 6rem auto; text-align: center; }
+    #gate h2 { font-size: 20px; font-weight: 500; margin-bottom: 8px; }
+    #gate p  { font-size: 13px; color: #888; margin-bottom: 1.5rem; }
+    #gate input { width: 100%; border: 1px solid #ddd; border-radius: 8px; padding: 10px 14px; font-size: 15px; outline: none; margin-bottom: 10px; display: block; }
+    #gate-err   { color: #e53935; font-size: 12px; margin-bottom: 10px; display: none; }
+    #gate button { width: 100%; background: #1a1a1a; color: #fff; border: none; border-radius: 8px; padding: 11px; font-size: 15px; cursor: pointer; }
+
+    /* ── Header ── */
+    .header { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 1.5rem; gap: 1rem; flex-wrap: wrap; }
+    .header-left { display: flex; flex-direction: column; gap: 3px; }
+    .back-link { font-size: 12px; color: #888; text-decoration: none; margin-bottom: 2px; }
+    .back-link:hover { color: #555; }
+    .header h1 { font-size: 22px; font-weight: 600; }
+    .header-sub { font-size: 13px; color: #888; }
+    .header-btns { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+    .auth-btn { padding: 6px 12px; border-radius: 8px; border: 1px solid #ddd; background: #fff; font-size: 13px; color: #555; cursor: pointer; white-space: nowrap; }
+    .auth-btn:hover { background: #f0f0f0; }
+    .auth-btn.logged { border-color: #c8e6c9; background: #f1f8e9; color: #388e3c; }
+
+    /* ── Admin panel ── */
+    .admin-panel { background: #fff; border: 1px solid #e0e0e0; border-radius: 10px; padding: 14px 16px; margin-bottom: 1.5rem; font-size: 13px; display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+    .admin-panel h3 { font-size: 14px; font-weight: 500; }
+    .admin-hint { font-size: 12px; color: #888; }
+
+    /* ── Filters ── */
+    .filters { background: #fff; border: 1px solid #e8e8e8; border-radius: 12px; padding: 14px 16px; margin-bottom: 1.5rem; display: flex; flex-direction: column; gap: 10px; }
+    .filter-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+    .filter-label { font-size: 12px; color: #888; white-space: nowrap; }
+    .filter-select { border: 1px solid #ddd; border-radius: 8px; padding: 5px 10px; font-size: 13px; outline: none; background: #fff; color: #333; cursor: pointer; }
+    .pill { border: 1px solid #ddd; border-radius: 999px; padding: 4px 12px; font-size: 12px; background: #fff; color: #555; cursor: pointer; transition: all 0.15s; white-space: nowrap; }
+    .pill:hover { border-color: #bbb; }
+    .pill.active { background: #1a1a1a; color: #fff; border-color: #1a1a1a; }
+    .pill.p1.active { background: #c62828; border-color: #c62828; }
+    .pill.p2.active { background: #e65100; border-color: #e65100; }
+    .pill.p3.active { background: #1565c0; border-color: #1565c0; }
+    .pill.p4.active { background: #6a1b9a; border-color: #6a1b9a; }
+    .pill.p5.active { background: #546e7a; border-color: #546e7a; }
+
+    /* ── Items grid ── */
+    .items-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 16px; }
+    .empty-state { border: 1px dashed #e1e1e1; border-radius: 12px; padding: 2rem; font-size: 14px; color: #777; background: #fbfbfb; text-align: center; }
+
+    /* ── Item card ── */
+    .item-card { background: #fff; border: 1px solid #e8e8e8; border-radius: 14px; overflow: hidden; display: flex; flex-direction: column; transition: box-shadow 0.15s; }
+    .item-card:hover { box-shadow: 0 4px 16px rgba(0,0,0,0.07); }
+    .item-card.reserved { opacity: 0.72; }
+    .item-img-wrap { width: 100%; height: 180px; overflow: hidden; background: #f0f0f0; }
+    .item-img { width: 100%; height: 100%; object-fit: cover; display: block; }
+    .item-img-placeholder { width: 100%; height: 140px; display: flex; align-items: center; justify-content: center; font-size: 64px; background: #fafafa; }
+    .item-body { padding: 14px; display: flex; flex-direction: column; gap: 8px; flex: 1; }
+    .item-badges { display: flex; gap: 5px; flex-wrap: wrap; }
+    .badge { font-size: 11px; border: 1px solid; border-radius: 999px; padding: 2px 8px; }
+    .badge-reserved { background: #f5f5f5; border-color: #ddd; color: #777; }
+    .item-name { font-size: 15px; font-weight: 600; line-height: 1.3; }
+    .item-desc { font-size: 13px; color: #666; line-height: 1.4; }
+    .item-desc.collapsed { display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+    .btn-expand { font-size: 12px; color: #888; background: none; border: none; cursor: pointer; padding: 0; text-decoration: underline; align-self: flex-start; }
+    .item-price { font-size: 16px; font-weight: 600; color: #1a1a1a; }
+    .item-meta { font-size: 12px; color: #999; }
+    .item-tags { display: flex; gap: 5px; flex-wrap: wrap; }
+    .tag { font-size: 11px; color: #7c3aed; background: #f5f0ff; border-radius: 4px; padding: 2px 6px; }
+    .item-actions { display: flex; gap: 7px; flex-wrap: wrap; margin-top: auto; padding-top: 4px; }
+    .btn-link { font-size: 12px; color: #1565c0; text-decoration: none; border: 1px solid #90caf9; border-radius: 6px; padding: 5px 10px; background: #e3f2fd; white-space: nowrap; }
+    .btn-link:hover { background: #bbdefb; }
+    .btn-reserve { font-size: 12px; background: #1a1a1a; color: #fff; border: none; border-radius: 6px; padding: 5px 12px; cursor: pointer; white-space: nowrap; }
+    .btn-reserve:hover { background: #333; }
+    .reserved-label { font-size: 12px; color: #888; padding: 5px 0; }
+    .btn-edit-item { font-size: 12px; background: #e3f2fd; color: #1565c0; border: 1px solid #90caf9; border-radius: 6px; padding: 4px 8px; cursor: pointer; }
+    .btn-del-item  { font-size: 12px; background: #fce4ec; color: #c62828; border: 1px solid #f48fb1; border-radius: 6px; padding: 4px 8px; cursor: pointer; }
+    .btn-unreserve { font-size: 11px; background: #fff3e0; color: #e65100; border: 1px solid #ffcc80; border-radius: 6px; padding: 4px 8px; cursor: pointer; }
+    .btn-add { background: #1a1a1a; color: #fff; border: none; border-radius: 8px; padding: 7px 16px; font-size: 13px; cursor: pointer; }
+    .btn-add:hover { background: #333; }
+
+    /* ── Modals ── */
+    .modal-bg { position: fixed; inset: 0; background: rgba(0,0,0,0.4); display: flex; align-items: center; justify-content: center; z-index: 100; padding: 1rem; overflow-y: auto; }
+    .modal { background: #fff; border-radius: 14px; padding: 1.5rem; width: 100%; max-width: 360px; }
+    .modal-wide { max-width: 480px; }
+    .modal h3 { font-size: 17px; font-weight: 600; margin-bottom: 4px; }
+    .modal-sub { font-size: 13px; color: #777; margin-bottom: 1rem; }
+    .modal input[type=text],
+    .modal input[type=url],
+    .modal input[type=number],
+    .modal textarea { width: 100%; border: 1px solid #ddd; border-radius: 8px; padding: 10px 12px; font-size: 14px; margin-bottom: 10px; outline: none; display: block; font: inherit; }
+    .modal input:focus, .modal textarea:focus { border-color: #90caf9; }
+    .modal textarea { min-height: 80px; resize: vertical; }
+    .modal-check { display: flex; align-items: flex-start; gap: 8px; font-size: 13px; color: #333; margin-bottom: 10px; cursor: pointer; }
+    .modal-check input { margin-top: 3px; flex-shrink: 0; }
+    .modal-hint { font-size: 12px; color: #aaa; margin-bottom: 10px; }
+    .modal-err { color: #e53935; font-size: 12px; margin-bottom: 8px; display: none; }
+    .modal-btns { display: flex; gap: 8px; justify-content: flex-end; margin-top: 4px; }
+    .btn-primary   { background: #1a1a1a; color: #fff; border: none; border-radius: 8px; padding: 9px 20px; font-size: 14px; cursor: pointer; }
+    .btn-primary:hover { background: #333; }
+    .btn-secondary { background: none; color: #777; border: 1px solid #ddd; border-radius: 8px; padding: 9px 16px; font-size: 14px; cursor: pointer; }
+    .modal-grid-2 { display: grid; grid-template-columns: 1fr 80px; gap: 8px; margin-bottom: 10px; }
+    .modal-grid-2 input, .modal-grid-2 select { margin-bottom: 0; }
+    .field-select { width: 100%; border: 1px solid #ddd; border-radius: 8px; padding: 10px 12px; font-size: 14px; margin-bottom: 10px; outline: none; background: #fff; font: inherit; }
+
+    .loader { text-align: center; padding: 3rem; color: #aaa; font-size: 14px; }
+
+    @media (max-width: 540px) {
+      .items-grid { grid-template-columns: 1fr; }
+      .filter-row { gap: 6px; }
+    }
+  </style>
+</head>
+<body>
+<div class="page">
+
+  <div id="gate">
+    <h2>🎁 Вишлист</h2>
+    <p>Введите пароль, чтобы открыть список</p>
+    <input id="gate-inp" type="password" placeholder="Пароль" autocomplete="current-password">
+    <div id="gate-err">Неверный пароль</div>
+    <button id="gate-btn">Войти</button>
+  </div>
+
+  <div id="root" style="display:none"><div class="loader">Загрузка...</div></div>
+
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
+<script>
+'use strict';
+
+// ─────────────────────────────────────────
+// CONFIG
+// ─────────────────────────────────────────
+var GUEST_EMAIL = 'auth@fox-aoi.xyz';
+var ADMIN_UID = '4tQbxe4uHbeZ11apRGhBdl9UzSt2';
+
+firebase.initializeApp({
+  apiKey: "AIzaSyBW2POEuUCjjCGjcGUAq8MUM-Z4UAjxQWE",
+  authDomain: "fox-aoi.firebaseapp.com",
+  databaseURL: "https://fox-aoi-default-rtdb.firebaseio.com",
+  projectId: "fox-aoi",
+  storageBucket: "fox-aoi.firebasestorage.app",
+  messagingSenderId: "51905315811",
+  appId: "1:51905315811:web:c42d3c542b39646a8b96d6"
+});
+
+var auth = firebase.auth();
+var db   = firebase.database();
+
+// ─────────────────────────────────────────
+// STATE
+// ─────────────────────────────────────────
+var items        = {};   // { id: item }
+var reservations = {};   // { id: { name, comment, isAnonymous, ts } }
+var currentUser  = null;
+var fbStarted    = false;
+
+var filterCategory = '';
+var filterPriority = 0;
+var filterStatus   = 'all';   // 'all' | 'free' | 'reserved'
+var sortBy         = 'priority'; // 'priority' | 'price_asc' | 'price_desc' | 'newest'
+
+var reserveModal = null;  // { itemId, itemName }
+var editResModal = null;  // { itemId } — редактирование существующей брони
+var showAddModal = false;
+var editItemData = null;  // { _id, ...fields }
+var expandedDescs = {};   // { itemId: true } — раскрытые описания
+
+// Мои брони (из sessionStorage, чтобы гость мог редактировать свою бронь)
+var myReservations = (function() {
+  try { return JSON.parse(sessionStorage.getItem('wl_my_res') || '{}'); } catch(e) { return {}; }
+})();
+function saveMyReservations() {
+  try { sessionStorage.setItem('wl_my_res', JSON.stringify(myReservations)); } catch(e) {}
+}
+
+var PRIORITIES = {
+  1: { label: 'Очень хочу',           color: '#fce4ec', border: '#f48fb1', text: '#c62828' },
+  2: { label: 'Было бы круто',        color: '#fff8e1', border: '#ffd54f', text: '#e65100' },
+  3: { label: 'Низкий приоритет',     color: '#e3f2fd', border: '#90caf9', text: '#1565c0' },
+  4: { label: 'Спонтанное желание',   color: '#f3e5f5', border: '#ce93d8', text: '#6a1b9a' },
+  5: { label: 'Мечта, когда-нибудь', color: '#eceff1', border: '#b0bec5', text: '#546e7a' }
+};
+
+// ─────────────────────────────────────────
+// GATE
+// ─────────────────────────────────────────
+document.getElementById('gate-btn').addEventListener('click', checkGate);
+document.getElementById('gate-inp').addEventListener('keydown', function(e) {
+  if (e.key === 'Enter') checkGate();
+});
+
+function checkGate() {
+  var password = document.getElementById('gate-inp').value;
+  var btn = document.getElementById('gate-btn');
+  btn.disabled = true;
+  btn.textContent = '...';
+  document.getElementById('gate-err').style.display = 'none';
+  document.getElementById('gate-inp').style.borderColor = '#ddd';
+
+  firebase.auth().signInWithEmailAndPassword(GUEST_EMAIL, password)
+    .then(function() {
+      sessionStorage.setItem('wl_auth_ok', '1');
+      openApp();
+    })
+    .catch(function() {
+      document.getElementById('gate-err').style.display = 'block';
+      document.getElementById('gate-inp').style.borderColor = '#e53935';
+      btn.disabled = false;
+      btn.textContent = 'Войти';
+    });
+}
+
+function openApp() {
+  document.getElementById('gate').style.display = 'none';
+  document.getElementById('root').style.display = 'block';
+  if (!fbStarted) {
+    fbStarted = true;
+    db.ref('wishlist/items').on('value', function(snap) { items = snap.val() || {}; render(); });
+    db.ref('wishlist/reservations').on('value', function(snap) { reservations = snap.val() || {}; render(); });
+    auth.onAuthStateChanged(function(user) { currentUser = user; render(); });
+  }
+}
+
+if (sessionStorage.getItem('wl_auth_ok')) {
+  firebase.auth().onAuthStateChanged(function(user) {
+    if (user) {
+      openApp();
+    } else {
+      sessionStorage.removeItem('wl_auth_ok');
+      document.getElementById('gate').style.display = 'block';
+      setTimeout(function() { document.getElementById('gate-inp').focus(); }, 50);
+    }
+  });
+} else {
+  document.getElementById('gate').style.display = 'block';
+  setTimeout(function() { document.getElementById('gate-inp').focus(); }, 50);
+}
+
+// ─────────────────────────────────────────
+// AUTH
+// ─────────────────────────────────────────
+function login()  { auth.signInWithPopup(new firebase.auth.GoogleAuthProvider()).catch(function(e) { alert('Ошибка: ' + e.message); }); }
+function logout() { auth.signOut(); }
+function isAdmin() {
+  return !!(currentUser &&
+    currentUser.uid &&
+    currentUser.uid === ADMIN_UID &&
+    currentUser.providerData.some(function(p) { return p.providerId === 'google.com'; }));
+}
+
+// ─────────────────────────────────────────
+// FILTER / SORT ACTIONS
+// ─────────────────────────────────────────
+function setFilter(key, val) {
+  if (key === 'category') filterCategory = val;
+  if (key === 'priority') filterPriority = val;
+  if (key === 'status')   filterStatus   = val;
+  render();
+}
+function setSort(val) { sortBy = val; render(); }
+
+// ─────────────────────────────────────────
+// RESERVE ACTIONS
+// ─────────────────────────────────────────
+function openReserveModal(itemId, itemName) {
+  if (reservations[itemId]) return;
+  reserveModal = { itemId: itemId, itemName: itemName };
+  render();
+  setTimeout(function() { var el = document.getElementById('res-name'); if (el) el.focus(); }, 50);
+}
+function closeReserveModal() { reserveModal = null; render(); }
+
+// Показать/скрыть поле даты
+function toggleResDate(chk) {
+  var wrap = document.getElementById('res-date-wrap');
+  if (wrap) wrap.style.display = chk.checked ? 'block' : 'none';
+}
+function toggleEresDate(chk) {
+  var wrap = document.getElementById('eres-date-wrap');
+  if (wrap) wrap.style.display = chk.checked ? 'block' : 'none';
+}
+
+// Expand/collapse описания карточки
+function toggleDesc(id) {
+  expandedDescs[id] = !expandedDescs[id];
+  render();
+}
+
+// Редактирование брони гостем
+function openEditResModal(itemId) {
+  editResModal  = { itemId: itemId };
+  reserveModal  = null;
+  showAddModal  = false;
+  editItemData  = null;
+  render();
+  setTimeout(function() { var el = document.getElementById('eres-name'); if (el) el.focus(); }, 50);
+}
+function closeEditResModal() { editResModal = null; render(); }
+
+function confirmEditReserve() {
+  var nameEl    = document.getElementById('eres-name');
+  var commentEl = document.getElementById('eres-comment');
+  var anonEl    = document.getElementById('eres-anon');
+  var dateTogEl = document.getElementById('eres-date-toggle');
+  var dateEl    = document.getElementById('eres-date');
+  var errEl     = document.getElementById('eres-err');
+
+  var name    = nameEl.value.trim();
+  var comment = commentEl.value.trim();
+  var isAnon  = anonEl.checked;
+  var giftDate = (dateTogEl && dateTogEl.checked && dateEl) ? dateEl.value : null;
+
+  errEl.style.display = 'none';
+  if (!name) { errEl.textContent = 'Введите ваше имя'; errEl.style.display = 'block'; nameEl.focus(); return; }
+
+  var itemId = editResModal.itemId;
+  var existing = reservations[itemId] || {};
+  var btn = document.getElementById('eres-save-btn');
+  if (btn) { btn.disabled = true; btn.textContent = '...'; }
+
+  var data = { name: name, isAnonymous: isAnon, ts: existing.ts || Date.now() };
+  if (comment)  data.comment  = comment;
+  if (giftDate) data.giftDate = giftDate;
+
+  db.ref('wishlist/reservations/' + itemId).set(data)
+    .then(function() { closeEditResModal(); showToast('Бронь обновлена ✓'); })
+    .catch(function(e) {
+      errEl.textContent = 'Ошибка: ' + e.message;
+      errEl.style.display = 'block';
+      if (btn) { btn.disabled = false; btn.textContent = 'Сохранить'; }
+    });
+}
+
+function confirmReserve() {
+  var nameEl    = document.getElementById('res-name');
+  var commentEl = document.getElementById('res-comment');
+  var confirmEl = document.getElementById('res-confirm');
+  var anonEl    = document.getElementById('res-anon');
+  var dateTogEl = document.getElementById('res-date-toggle');
+  var dateEl    = document.getElementById('res-date');
+  var errEl     = document.getElementById('res-err');
+
+  var name     = nameEl.value.trim();
+  var comment  = commentEl.value.trim();
+  var confirmed = confirmEl.checked;
+  var isAnon   = anonEl.checked;
+  var giftDate = (dateTogEl && dateTogEl.checked && dateEl) ? dateEl.value : null;
+
+  errEl.style.display = 'none';
+  if (!name)      { errEl.textContent = 'Введите ваше имя'; errEl.style.display = 'block'; nameEl.focus(); return; }
+  if (!confirmed) { errEl.textContent = 'Нужно подтвердить намерение подарить'; errEl.style.display = 'block'; return; }
+
+  var itemId = reserveModal.itemId;
+  var btn = document.querySelector('#res-err ~ div .btn-primary');
+  if (btn) { btn.disabled = true; btn.textContent = '...'; }
+
+  db.ref('wishlist/reservations/' + itemId).transaction(function(current) {
+    if (current !== null) return; // уже занято — отменяем
+    var data = { name: name, isAnonymous: isAnon, ts: Date.now() };
+    if (comment)  data.comment  = comment;
+    if (giftDate) data.giftDate = giftDate;
+    return data;
+  }).then(function(result) {
+    if (result.committed) {
+      myReservations[itemId] = true;
+      saveMyReservations();
+      closeReserveModal();
+      showToast('Отлично! Бронь оформлена 🎉');
+    } else {
+      closeReserveModal();
+      showToast('Этот товар уже забронировали 😔');
+    }
+  }).catch(function(e) {
+    errEl.textContent = 'Ошибка: ' + e.message;
+    errEl.style.display = 'block';
+    if (btn) { btn.disabled = false; btn.textContent = 'Забронировать'; }
+  });
+}
+
+// ─────────────────────────────────────────
+// ADMIN ITEM ACTIONS
+// ─────────────────────────────────────────
+function openAddModal() { showAddModal = true; editItemData = null; render(); setTimeout(function() { var el = document.getElementById('add-name'); if (el) el.focus(); }, 50); }
+function openEditItem(id) { editItemData = Object.assign({ _id: id }, items[id]); showAddModal = false; render(); }
+function closeAddModal()  { showAddModal = false; editItemData = null; render(); }
+
+function saveItem() {
+  var nameVal = document.getElementById('add-name').value.trim();
+  var errEl   = document.getElementById('add-err');
+  errEl.style.display = 'none';
+  if (!nameVal) { errEl.textContent = 'Название обязательно'; errEl.style.display = 'block'; return; }
+
+  var priceRaw = document.getElementById('add-price').value;
+  var priceNum = parseFloat(priceRaw);
+  var data = {
+    name:        nameVal,
+    description: document.getElementById('add-desc').value.trim()     || null,
+    url:         document.getElementById('add-url').value.trim()      || null,
+    price:       isNaN(priceNum) || priceRaw === '' ? null : priceNum,
+    currency:    document.getElementById('add-currency').value,
+    imageUrl:    document.getElementById('add-img').value.trim()      || null,
+    category:    document.getElementById('add-category').value.trim() || null,
+    priority:    parseInt(document.getElementById('add-priority').value, 10),
+    tags:        document.getElementById('add-tags').value.trim()     || null,
+    ts:          editItemData ? editItemData.ts : Date.now()
+  };
+  // Убираем null-поля
+  Object.keys(data).forEach(function(k) { if (data[k] === null) delete data[k]; });
+
+  var saveBtn = document.getElementById('add-save-btn');
+  if (saveBtn) { saveBtn.disabled = true; saveBtn.textContent = '...'; }
+
+  var ref = editItemData
+    ? db.ref('wishlist/items/' + editItemData._id)
+    : db.ref('wishlist/items').push();
+
+  ref.set(data)
+    .then(function() { closeAddModal(); showToast('Сохранено ✓'); })
+    .catch(function(e) {
+      errEl.textContent = 'Ошибка: ' + e.message;
+      errEl.style.display = 'block';
+      if (saveBtn) { saveBtn.disabled = false; saveBtn.textContent = 'Сохранить'; }
+    });
+}
+
+function deleteItem(id) {
+  if (!confirm('Удалить этот товар из вишлиста?')) return;
+  db.ref('wishlist/items/' + id).remove();
+  db.ref('wishlist/reservations/' + id).remove();
+}
+
+function unreserveItem(id) {
+  if (!confirm('Снять бронирование с этого товара?')) return;
+  db.ref('wishlist/reservations/' + id).remove();
+}
+
+// ─────────────────────────────────────────
+// TOAST
+// ─────────────────────────────────────────
+function showToast(msg) {
+  var t = document.createElement('div');
+  t.textContent = msg;
+  t.style.cssText = 'position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#1a1a1a;color:#fff;padding:10px 20px;border-radius:99px;font-size:14px;z-index:9999;pointer-events:none;opacity:0;transition:opacity 0.2s';
+  document.body.appendChild(t);
+  setTimeout(function() { t.style.opacity = '1'; }, 10);
+  setTimeout(function() { t.style.opacity = '0'; setTimeout(function() { t.remove(); }, 300); }, 2500);
+}
+
+// ─────────────────────────────────────────
+// HELPERS
+// ─────────────────────────────────────────
+function escapeHtml(s) {
+  if (!s && s !== 0) return '';
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+}
+function attrSafe(s) {
+  return escapeHtml(s).replace(/'/g, '&#39;');
+}
+function formatPrice(price, currency) {
+  if (!price && price !== 0) return '';
+  return Number(price).toLocaleString('ru-RU') + '\u00a0' + (currency || '₽');
+}
+
+// ─────────────────────────────────────────
+// RENDER
+// ─────────────────────────────────────────
+function render() {
+  var root = document.getElementById('root');
+  if (!root || root.style.display === 'none') return;
+
+  var html = '';
+
+  // ── Header ──
+  html += '<div class="header">' +
+    '<div class="header-left">' +
+      '<a href="https://kkqr77.github.io/fox-aoi/" class="back-link">← Расписание</a>' +
+      '<h1>🎁 Вишлист</h1>' +
+      '<div class="header-sub">Список желаний и подарков, почему бы и нет..? для тех кто хочет что-то подарить, я перенёс список желаний и будущих покупок сюда, так что воть :P</div>' +
+    '</div>' +
+    '<div class="header-btns">';
+  if (isAdmin()) {
+    html += '<button class="auth-btn logged" onclick="logout()">✓ ' + escapeHtml(currentUser.displayName || 'Ред. режим') + ' — выйти</button>';
+  } else {
+    html += '<button class="auth-btn" onclick="login()">Вход для ред.</button>';
+  }
+  html += '</div></div>';
+
+  // ── Admin panel ──
+  if (isAdmin()) {
+    html += '<div class="admin-panel">' +
+      '<div><div style="font-size:14px;font-weight:500">Панель редактирования</div>' +
+      '<div class="admin-hint">Добавляйте и редактируйте товары в вишлисте</div></div>' +
+      '<button class="btn-add" onclick="openAddModal()">+ Добавить товар</button>' +
+    '</div>';
+  }
+
+  // ── Filters ──
+  // Собираем категории из существующих товаров
+  var cats = [];
+  Object.values(items).forEach(function(it) {
+    if (it.category && cats.indexOf(it.category) === -1) cats.push(it.category);
+  });
+  cats.sort();
+
+  html += '<div class="filters">';
+
+  // Category + Sort row
+  html += '<div class="filter-row">' +
+    '<span class="filter-label">Категория:</span>' +
+    '<select class="filter-select" onchange="setFilter(\'category\', this.value)">' +
+      '<option value="">Все</option>';
+  cats.forEach(function(c) {
+    html += '<option value="' + escapeHtml(c) + '"' + (filterCategory === c ? ' selected' : '') + '>' + escapeHtml(c) + '</option>';
+  });
+  html += '</select>' +
+    '<span class="filter-label" style="margin-left:8px">Сорт.:</span>' +
+    '<select class="filter-select" onchange="setSort(this.value)">' +
+      '<option value="priority"'  + (sortBy==='priority'  ? ' selected':'') + '>По приоритету</option>' +
+      '<option value="price_asc"' + (sortBy==='price_asc' ? ' selected':'') + '>Дешевле</option>' +
+      '<option value="price_desc"'+ (sortBy==='price_desc'? ' selected':'') + '>Дороже</option>' +
+      '<option value="newest"'    + (sortBy==='newest'    ? ' selected':'') + '>Новые</option>' +
+    '</select>' +
+  '</div>';
+
+  // Priority pills
+  html += '<div class="filter-row"><span class="filter-label">Приоритет:</span>';
+  html += '<button class="pill' + (filterPriority===0?' active':'') + '" onclick="setFilter(\'priority\',0)">Все</button>';
+  [1,2,3,4,5].forEach(function(p) {
+    html += '<button class="pill p' + p + (filterPriority===p?' active':'') + '" onclick="setFilter(\'priority\',' + p + ')">' + PRIORITIES[p].label + '</button>';
+  });
+  html += '</div>';
+
+  // Status pills
+  html += '<div class="filter-row"><span class="filter-label">Статус:</span>' +
+    '<button class="pill' + (filterStatus==='all'     ?' active':'') + '" onclick="setFilter(\'status\',\'all\')">Все</button>' +
+    '<button class="pill' + (filterStatus==='free'    ?' active':'') + '" onclick="setFilter(\'status\',\'free\')">Свободно</button>' +
+    '<button class="pill' + (filterStatus==='reserved'?' active':'') + '" onclick="setFilter(\'status\',\'reserved\')">Забронировано</button>' +
+  '</div>';
+
+  html += '</div>'; // end filters
+
+  // ── Items ──
+  var list = Object.keys(items).map(function(id) { return { id: id, data: items[id] }; });
+
+  // Filter
+  if (filterCategory) list = list.filter(function(e) { return e.data.category === filterCategory; });
+  if (filterPriority) list = list.filter(function(e) { return (e.data.priority || 0) === filterPriority; });
+  if (filterStatus === 'free')     list = list.filter(function(e) { return !reservations[e.id]; });
+  if (filterStatus === 'reserved') list = list.filter(function(e) { return !!reservations[e.id]; });
+
+  // Sort
+  list.sort(function(a, b) {
+    if (sortBy === 'priority') {
+      var pa = (a.data.priority || 99), pb = (b.data.priority || 99);
+      if (pa !== pb) return pa - pb;
+      return (a.data.price || Infinity) - (b.data.price || Infinity);
+    }
+    if (sortBy === 'price_asc')  return (a.data.price || 0) - (b.data.price || 0);
+    if (sortBy === 'price_desc') return (b.data.price || 0) - (a.data.price || 0);
+    if (sortBy === 'newest')     return (b.data.ts || 0) - (a.data.ts || 0);
+    return 0;
+  });
+
+  if (list.length === 0) {
+    if (Object.keys(items).length === 0) {
+      html += '<div class="empty-state">Вишлист пока пуст' + (isAdmin() ? ' — добавьте первый товар!' : ' 🎁') + '</div>';
+    } else {
+      html += '<div class="empty-state">Ничего не найдено по выбранным фильтрам</div>';
+    }
+  } else {
+    html += '<div class="items-grid">';
+    list.forEach(function(entry) {
+      html += renderCard(entry.id, entry.data);
+    });
+    html += '</div>';
+  }
+
+  // ── Reserve modal ──
+  if (reserveModal) {
+    html += '<div class="modal-bg" onclick="if(event.target===this)closeReserveModal()">' +
+      '<div class="modal">' +
+        '<h3>Забронировать подарок</h3>' +
+        '<div class="modal-sub">' + escapeHtml(reserveModal.itemName) + '</div>' +
+        '<input id="res-name" type="text" placeholder="Ваше имя *" maxlength="40">' +
+        '<textarea id="res-comment" placeholder="Комментарий (необязательно)" maxlength="200"></textarea>' +
+        '<label class="modal-check">' +
+          '<input id="res-confirm" type="checkbox">' +
+          '<span>Я подтверждаю, что хочу подарить этот товар</span>' +
+        '</label>' +
+        '<label class="modal-check">' +
+          '<input id="res-date-toggle" type="checkbox" onchange="toggleResDate(this)">' +
+          '<span>Хочу указать примерную дату вручения подарка</span>' +
+        '</label>' +
+        '<div id="res-date-wrap" style="display:none;margin-bottom:10px">' +
+          '<input id="res-date" type="date" style="width:100%;border:1px solid #ddd;border-radius:8px;padding:9px 12px;font-size:14px;outline:none;font:inherit">' +
+        '</div>' +
+        '<label class="modal-check">' +
+          '<input id="res-anon" type="checkbox">' +
+          '<span>Анонимная бронь — скрыть моё имя от других</span>' +
+        '</label>' +
+        '<div id="res-err" class="modal-err"></div>' +
+        '<div class="modal-hint">После бронирования другие увидят, что товар занят, но не кем.</div>' +
+        '<div class="modal-btns">' +
+          '<button class="btn-secondary" onclick="closeReserveModal()">Отмена</button>' +
+          '<button class="btn-primary" onclick="confirmReserve()">Забронировать</button>' +
+        '</div>' +
+      '</div></div>';
+  }
+
+  // ── Edit reservation modal ──
+  if (editResModal) {
+    var eRes = reservations[editResModal.itemId] || {};
+    html += '<div class="modal-bg" onclick="if(event.target===this)closeEditResModal()">' +
+      '<div class="modal">' +
+        '<h3>Изменить бронь</h3>' +
+        '<div class="modal-sub">' + escapeHtml((items[editResModal.itemId] || {}).name || '') + '</div>' +
+        '<input id="eres-name" type="text" placeholder="Ваше имя *" maxlength="40" value="' + attrSafe(eRes.name || '') + '">' +
+        '<textarea id="eres-comment" placeholder="Комментарий (необязательно)" maxlength="200">' + escapeHtml(eRes.comment || '') + '</textarea>' +
+        '<label class="modal-check">' +
+          '<input id="eres-date-toggle" type="checkbox"' + (eRes.giftDate ? ' checked' : '') + ' onchange="toggleEresDate(this)">' +
+          '<span>Указать примерную дату вручения</span>' +
+        '</label>' +
+        '<div id="eres-date-wrap" style="display:' + (eRes.giftDate ? 'block' : 'none') + ';margin-bottom:10px">' +
+          '<input id="eres-date" type="date" value="' + attrSafe(eRes.giftDate || '') + '" style="width:100%;border:1px solid #ddd;border-radius:8px;padding:9px 12px;font-size:14px;outline:none;font:inherit">' +
+        '</div>' +
+        '<label class="modal-check">' +
+          '<input id="eres-anon" type="checkbox"' + (eRes.isAnonymous ? ' checked' : '') + '>' +
+          '<span>Анонимная бронь</span>' +
+        '</label>' +
+        '<div id="eres-err" class="modal-err"></div>' +
+        '<div class="modal-btns">' +
+          '<button class="btn-secondary" onclick="closeEditResModal()">Отмена</button>' +
+          '<button id="eres-save-btn" class="btn-primary" onclick="confirmEditReserve()">Сохранить</button>' +
+        '</div>' +
+      '</div></div>';
+  }
+
+  // ── Add/Edit modal ──
+  if (showAddModal || editItemData) {
+    var it = editItemData || {};
+    var modalTitle = editItemData ? 'Редактировать товар' : 'Добавить товар';
+    html += '<div class="modal-bg" onclick="if(event.target===this)closeAddModal()">' +
+      '<div class="modal modal-wide">' +
+        '<h3>' + modalTitle + '</h3>' +
+        '<input id="add-name" type="text" placeholder="Название *" maxlength="100" value="' + attrSafe(it.name || '') + '">' +
+        '<textarea id="add-desc" placeholder="Описание (необязательно)" maxlength="500">' + escapeHtml(it.description || '') + '</textarea>' +
+        '<input id="add-url" type="url" placeholder="Ссылка на магазин" value="' + attrSafe(it.url || '') + '">' +
+        '<div class="modal-grid-2">' +
+          '<input id="add-price" type="number" min="0" placeholder="Цена" style="border:1px solid #ddd;border-radius:8px;padding:10px 12px;font-size:14px;outline:none;font:inherit" value="' + (it.price || '') + '">' +
+          '<select id="add-currency" style="border:1px solid #ddd;border-radius:8px;padding:10px 8px;font-size:14px;outline:none;background:#fff">' +
+            '<option value="₽"' + ((!it.currency || it.currency==='₽') ? ' selected':'') + '>₽</option>' +
+            '<option value="$"' + (it.currency==='$' ? ' selected':'') + '>$</option>' +
+            '<option value="€"' + (it.currency==='€' ? ' selected':'') + '>€</option>' +
+            '<option value="¥"' + (it.currency==='¥' ? ' selected':'') + '>¥</option>' +
+          '</select>' +
+        '</div>' +
+        '<input id="add-img" type="url" placeholder="Ссылка на картинку товара" value="' + attrSafe(it.imageUrl || '') + '">' +
+        '<input id="add-category" type="text" placeholder="Категория (Игры, Техника, Аниме...)" maxlength="40" value="' + attrSafe(it.category || '') + '">' +
+        '<select id="add-priority" class="field-select">' +
+          '<option value="1"' + ((it.priority||1)===1 ? ' selected':'') + '>⭐⭐⭐ Очень хочу</option>' +
+          '<option value="2"' + ((it.priority||1)===2 ? ' selected':'') + '>⭐⭐ Было бы круто</option>' +
+          '<option value="3"' + ((it.priority||1)===3 ? ' selected':'') + '>⭐ Низкий приоритет</option>' +
+          '<option value="4"' + ((it.priority||1)===4 ? ' selected':'') + '>✨ Спонтанное желание</option>' +
+          '<option value="5"' + ((it.priority||1)===5 ? ' selected':'') + '>💭 Мечта, когда-нибудь</option>' +
+        '</select>' +
+        '<input id="add-tags" type="text" placeholder="Теги через запятую: gaming, anime, pc..." maxlength="200" value="' + attrSafe(it.tags || '') + '">' +
+        '<div id="add-err" class="modal-err"></div>' +
+        '<div class="modal-btns">' +
+          '<button class="btn-secondary" onclick="closeAddModal()">Отмена</button>' +
+          '<button id="add-save-btn" class="btn-primary" onclick="saveItem()">Сохранить</button>' +
+        '</div>' +
+      '</div></div>';
+  }
+
+  root.innerHTML = html;
+}
+
+// ─────────────────────────────────────────
+// RENDER CARD
+// ─────────────────────────────────────────
+function renderCard(id, item) {
+  var reserved = !!reservations[id];
+  var res       = reservations[id] || null;
+  var pri       = item.priority ? PRIORITIES[item.priority] : null;
+  var tags      = item.tags
+    ? item.tags.split(',').map(function(t) { return t.trim(); }).filter(Boolean)
+    : [];
+  var isExpanded = !!expandedDescs[id];
+  // Emoji-детектор: если imageUrl не содержит "://" — это смайл/текст, не URL
+  var imgIsEmoji = item.imageUrl && item.imageUrl.indexOf('://') === -1;
+
+  var html = '<div class="item-card' + (reserved ? ' reserved' : '') + '">';
+
+  // Image / emoji / placeholder
+  if (item.imageUrl && !imgIsEmoji) {
+    html += '<div class="item-img-wrap"><img class="item-img" src="' + attrSafe(item.imageUrl) + '" alt="" loading="lazy" onerror="this.closest(\'.item-img-wrap\').style.display=\'none\'"></div>';
+  } else {
+    html += '<div class="item-img-placeholder">' + escapeHtml(item.imageUrl || '🎁') + '</div>';
+  }
+
+  html += '<div class="item-body">';
+
+  // Badges
+  html += '<div class="item-badges">';
+  if (pri) {
+    html += '<span class="badge" style="background:' + pri.color + ';border-color:' + pri.border + ';color:' + pri.text + '">' + pri.label + '</span>';
+  }
+  if (reserved) {
+    html += '<span class="badge badge-reserved">🔒 Занято</span>';
+  }
+  html += '</div>';
+
+  // Name
+  html += '<div class="item-name">' + escapeHtml(item.name) + '</div>';
+
+  // Description с expand
+  if (item.description) {
+    var longDesc = item.description.length > 120;
+    html += '<div id="desc-' + id + '" class="item-desc' + (longDesc && !isExpanded ? ' collapsed' : '') + '">' + escapeHtml(item.description) + '</div>';
+    if (longDesc) {
+      html += '<button class="btn-expand" onclick="toggleDesc(\'' + id + '\')">' + (isExpanded ? '▲ Свернуть' : '▼ Читать далее') + '</button>';
+    }
+  }
+
+  // Price
+  if (item.price) {
+    html += '<div class="item-price">' + formatPrice(item.price, item.currency) + '</div>';
+  }
+
+  // Category
+  if (item.category) {
+    html += '<div class="item-meta">' + escapeHtml(item.category) + '</div>';
+  }
+
+  // Tags
+  if (tags.length) {
+    html += '<div class="item-tags">';
+    tags.forEach(function(t) {
+      html += '<span class="tag">#' + escapeHtml(t) + '</span>';
+    });
+    html += '</div>';
+  }
+
+  // Reservation info
+  if (reserved && res) {
+    // Дата подарка — видна всем
+    if (res.giftDate) {
+      var d = new Date(res.giftDate);
+      var dateStr = d.toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' });
+      html += '<div class="item-meta" style="color:#888">🗓 Примерно: ' + escapeHtml(dateStr) + '</div>';
+    }
+    // Имя бронирующего — только не-анонимные, только не хозяину
+    if (!res.isAnonymous && !isAdmin()) {
+      html += '<div class="item-meta" style="color:#555">Бронь: ' + escapeHtml(res.name) + (res.comment ? ' · ' + escapeHtml(res.comment) : '') + '</div>';
+    }
+  }
+
+  // Actions
+  html += '<div class="item-actions">';
+  if (item.url) {
+    html += '<a class="btn-link" href="' + attrSafe(item.url) + '" target="_blank" rel="noopener noreferrer">Посмотреть →</a>';
+  }
+  if (!reserved) {
+    var safeName = attrSafe(item.name);
+    html += '<button class="btn-reserve" onclick="openReserveModal(\'' + id + '\',\'' + safeName + '\')">🎁 Забронировать</button>';
+  } else if (!isAdmin()) {
+    html += '<span class="reserved-label">Занято</span>';
+  }
+  if (isAdmin()) {
+    html += '<button class="btn-edit-item" onclick="openEditItem(\'' + id + '\')">✏️</button>';
+    html += '<button class="btn-del-item"  onclick="deleteItem(\'' + id + '\')">🗑</button>';
+    if (reserved) {
+      html += '<button class="btn-unreserve" onclick="unreserveItem(\'' + id + '\')">Снять бронь</button>';
+      html += '<button class="btn-edit-item" onclick="openEditResModal(\'' + id + '\')" style="background:#fff3e0;color:#e65100;border-color:#ffcc80">✏️ Бронь</button>';
+    }
+  }
+  html += '</div>';
+
+  html += '</div>'; // item-body
+  html += '</div>'; // item-card
+  return html;
+}
+
+</script>
+</body>
+</html>
