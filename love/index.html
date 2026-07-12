@@ -57,6 +57,10 @@
   .ribbon-head span{font-size:11.5px;color:var(--muted);}
   .ribbon-legend{display:flex;gap:14px;flex-wrap:wrap;margin-top:8px;font-size:11px;color:var(--muted);}
   .ribbon-legend i{display:inline-block;width:9px;height:9px;border-radius:3px;margin-right:5px;position:relative;top:1px;}
+  .ribbon-scroll{overflow-x:auto;-webkit-overflow-scrolling:touch;padding-bottom:6px;margin:0 -2px;}
+  .ribbon-scroll svg{display:block;}
+  .ribbon-day{cursor:pointer;}
+  .ribbon-day:active rect{opacity:.85;}
 
   /* Panels / layout */
   .planner{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(280px,0.9fr);gap:16px;align-items:start;}
@@ -83,6 +87,9 @@
   .tag-free{background:var(--gold-soft);color:#8a611c;}
   .tag-plan{background:var(--sage-soft);color:#3f5f49;}
   .tag-busy{background:var(--line);color:var(--muted);}
+  .tag-shift-a{background:var(--blue-soft);color:var(--blue);}
+  .tag-shift-b{background:var(--rose-soft);color:var(--rose);}
+  .tag-shift-both{background:#efe4e9;color:#6b4a56;}
 
   .selected-date{font-size:19px;font-weight:500;font-style:italic;font-family:'Newsreader',serif;margin-bottom:2px;}
   .selected-sub{font-size:12px;color:var(--muted);margin-bottom:14px;}
@@ -159,6 +166,10 @@
   .idea-title.done{text-decoration:line-through;}
   .idea-meta{font-size:11px;color:var(--muted);margin-top:2px;}
   .idea-cat{display:inline-block;background:var(--rose-soft);color:var(--rose);border-radius:999px;padding:1px 8px;font-size:10px;margin-right:6px;}
+  .idea-card{flex-direction:column;align-items:stretch;}
+  .idea-card-top{display:flex;align-items:flex-start;justify-content:space-between;gap:8px;}
+  .idea-comment-inp{width:100%;border:1px solid var(--line);border-radius:8px;padding:6px 9px;font-size:12px;outline:none;background:var(--bg-alt);font-family:inherit;margin-top:8px;}
+  .idea-comment-inp:focus{border-color:var(--gold);}
 
   .tabs{display:flex;gap:6px;margin-bottom:1.2rem;}
   .tab-btn{padding:7px 14px;border-radius:999px;border:1px solid var(--line);background:var(--bg-alt);font-size:12.5px;color:var(--muted);cursor:pointer;font-family:inherit;}
@@ -248,7 +259,7 @@ var MIN_WINDOW_MIN = 30;      // минимальная длительность
 var SUGGESTION_STEP_MIN = 30; // шаг быстрых предложений внутри общего времени
 var DEFAULT_DURATION_MIN = 90;
 var TIMELINE_HEIGHT_PX = 720;
-var RIBBON_DAYS = 14;
+var RIBBON_DAYS = 30; // теперь лента прокручивается по горизонтали, можно показывать больше, чем 2 недели
 
 // ============================================================
 // Firebase (тот же проект fox-aoi, отдельные узлы в базе: duo/*)
@@ -285,7 +296,7 @@ var duoConfig = {
 var busyData  = { a: {}, b: {} };   // busyData.a['2026-07-12'] = { key: {start,end,label} }
 var shiftOverrides = { a: {}, b: {} }; // shiftOverrides.b['2026-07-12'] = { mode, start, end, note }
 var plans     = {};                 // plans[id] = {date,startTime,endTime,title,notes,status,ts}
-var ideas     = {};                 // ideas[id] = {title,category,cost,done,ts}
+var ideas     = {};                 // ideas[id] = {title,category,cost,done,ts,comment}
 var watchItems = {};
 var uiSettings = {};
 
@@ -564,6 +575,22 @@ function getDayStatus(dateStr){
   if (hasFreeTogether(dateStr)) return 'free';
   return 'busy';
 }
+var BIG_FREE_THRESHOLD_MIN = 18*60; // 18 часов — если свободного времени больше, показываем "есть время" вместо смен
+function getTotalFreeMinutes(dateStr){
+  return getFreeTogetherIntervals(dateStr).reduce(function(sum, iv){ return sum + (iv[1]-iv[0]); }, 0);
+}
+// Тег для дня в календаре: план > много свободного времени (18ч+) > чьи смены > заняты
+function getDayTagInfo(dateStr){
+  if (isPastDate(dateStr)) return null;
+  if (getPlansForDate(dateStr,false).length>0) return { cls:'tag-plan', text:'план' };
+  if (getTotalFreeMinutes(dateStr) >= BIG_FREE_THRESHOLD_MIN) return { cls:'tag-free', text:'есть время' };
+  var workA = isWorkDayFor('a', dateStr);
+  var workB = isWorkDayFor('b', dateStr);
+  if (workA && workB) return { cls:'tag-shift-both', text:'оба на смене' };
+  if (workA) return { cls:'tag-shift-a', text:personName('a')+' на смене' };
+  if (workB) return { cls:'tag-shift-b', text:personName('b')+' на смене' };
+  return { cls:'tag-busy', text:'заняты' };
+}
 function isRangeFree(dateStr, startMin, endMin){
   if (isPastDate(dateStr)) return false;
   if (startMin===null || endMin===null || endMin<=startMin) return false;
@@ -778,6 +805,14 @@ function addIdeaInline(){
 function submitIdea(){ addIdeaInline(); ideaModal = false; render(); }
 function toggleIdea(id){ db.ref('duo/ideas/'+id+'/done').set(!ideas[id].done); }
 function deleteIdea(id){ if (confirm('Удалить идею?')) db.ref('duo/ideas/'+id).remove(); }
+function saveIdeaComment(id){
+  var el = document.getElementById('idea-comment-'+id);
+  if (!el || !ideas[id]) return;
+  var val = el.value.trim();
+  if (val === (ideas[id].comment||'')) return; // ничего не поменялось
+  db.ref('duo/ideas/'+id+'/comment').set(val || null)
+    .catch(function(err){ alert('Не удалось сохранить комментарий: '+err.message); });
+}
 function setTab(t){ tab = t; render(); }
 function logout(){ auth.signOut(); }
 
@@ -842,14 +877,20 @@ function renderRibbon(){
   var w = days.length*(colW+gap)-gap;
   var h = rowH*2 + rowGap + padTop*2 + 14;
 
-  var svg = '<svg viewBox="0 0 '+w+' '+h+'" width="100%" style="display:block;overflow:visible" xmlns="http://www.w3.org/2000/svg">';
+  // Фиксированная ширина (не 100%) — так лента не сжимается на телефоне,
+  // а скроллится горизонтально внутри .ribbon-scroll
+  var svg = '<svg viewBox="0 0 '+w+' '+h+'" width="'+w+'" height="'+h+'" xmlns="http://www.w3.org/2000/svg">';
 
   days.forEach(function(dateStr, idx){
     var x = idx*(colW+gap);
     var workA = isWorkDayFor('a', dateStr);
     var workB = isWorkDayFor('b', dateStr);
-    var free = hasFreeTogether(dateStr);
     var hasPlan = getPlansForDate(dateStr,false).length>0;
+    var past = isPastDate(dateStr);
+
+    svg += '<g class="ribbon-day" onclick="jumpToRibbonDay(\''+dateStr+'\')">';
+    // прозрачная область для клика на весь день
+    svg += '<rect x="'+x+'" y="0" width="'+colW+'" height="'+h+'" fill="transparent"></rect>';
 
     // row A
     svg += '<rect x="'+x+'" y="'+padTop+'" width="'+colW+'" height="'+rowH+'" rx="4" fill="'+(workA?'#4c6b8a':'#e4ecf3')+'" opacity="'+(workA?1:0.55)+'"></rect>';
@@ -858,7 +899,7 @@ function renderRibbon(){
     svg += '<rect x="'+x+'" y="'+yB+'" width="'+colW+'" height="'+rowH+'" rx="4" fill="'+(workB?'#b5566b':'#f6e4e9')+'" opacity="'+(workB?1:0.55)+'"></rect>';
 
     // overlap marker (both off work) under both rows
-    if (!workA && !workB && !isPastDate(dateStr)){
+    if (!workA && !workB && !past){
       svg += '<rect x="'+x+'" y="'+padTop+'" width="'+colW+'" height="'+(rowH*2+rowGap)+'" rx="5" fill="none" stroke="#c08a2e" stroke-width="2"></rect>';
     }
     if (hasPlan){
@@ -869,10 +910,28 @@ function renderRibbon(){
     var lbl = pad(d.getDate())+'.'+pad(d.getMonth()+1);
     var isToday = isTodayKey(dateStr);
     svg += '<text x="'+(x+colW/2)+'" y="'+(h-3)+'" font-size="9" text-anchor="middle" fill="'+(isToday?'#c08a2e':'#8a7b85')+'" font-family="Inter, sans-serif" font-weight="'+(isToday?'700':'400')+'">'+lbl+'</text>';
+    svg += '</g>';
   });
 
   svg += '</svg>';
   return svg;
+}
+
+// Клик по дню в ленте ритма -> переключиться на вкладку календаря,
+// открыть нужный месяц и проскроллить к выбранному дню
+function jumpToRibbonDay(dateStr){
+  if (isPastDate(dateStr)) return;
+  tab = 'calendar';
+  var now = new Date(); now.setDate(1); now.setHours(0,0,0,0);
+  var target = new Date(dateStr+'T00:00:00'); target.setDate(1);
+  var diffMonths = (target.getFullYear()-now.getFullYear())*12 + (target.getMonth()-now.getMonth());
+  monthOffset = Math.max(0, diffMonths);
+  selectedDate = dateStr;
+  render();
+  setTimeout(function(){
+    var el = document.querySelector('.day-btn.selected');
+    if (el && el.scrollIntoView) el.scrollIntoView({behavior:'smooth', block:'center'});
+  }, 60);
 }
 
 function renderShiftEditor(person, dateStr){
@@ -1003,8 +1062,8 @@ function render(){
 
   // Ribbon
   html += '<div class="ribbon-card">';
-  html += '<div class="ribbon-head"><h2>Ритм на 2 недели</h2><span>'+escapeHtml(personName('a'))+' / '+escapeHtml(personName('b'))+'</span></div>';
-  html += renderRibbon();
+  html += '<div class="ribbon-head"><h2>Ритм смен</h2><span>'+escapeHtml(personName('a'))+' / '+escapeHtml(personName('b'))+' · нажмите на день</span></div>';
+  html += '<div class="ribbon-scroll">'+renderRibbon()+'</div>';
   html += '<div class="ribbon-legend">'+
     '<div><i style="background:#4c6b8a"></i>'+escapeHtml(personName('a'))+' на смене</div>'+
     '<div><i style="background:#b5566b"></i>'+escapeHtml(personName('b'))+' на смене</div>'+
@@ -1053,7 +1112,6 @@ function render(){
     var inMonth = day.getMonth()===monthStart.getMonth();
     var past = isPastDate(key);
     var selected = key===selectedDate;
-    var status = inMonth ? getDayStatus(key) : 'past';
     var classes = ['day-btn'];
     if (!inMonth) classes.push('outside');
     if (past) classes.push('disabled');
@@ -1062,9 +1120,8 @@ function render(){
 
     var tag = '';
     if (inMonth && !past){
-      if (status==='plan') tag = '<span class="day-tag tag-plan">план</span>';
-      else if (status==='free') tag = '<span class="day-tag tag-free">есть время</span>';
-      else tag = '<span class="day-tag tag-busy">заняты</span>';
+      var tagInfo = getDayTagInfo(key);
+      if (tagInfo) tag = '<span class="day-tag '+tagInfo.cls+'">'+escapeHtml(tagInfo.text)+'</span>';
     }
     html += '<button class="'+classes.join(' ')+'"'+(inMonth && !past ? ' onclick="selectDate(\''+key+'\')"' : ' disabled')+'>'+
       '<div class="day-num">'+day.getDate()+'</div>'+tag+'</button>';
@@ -1165,13 +1222,16 @@ function renderIdeasTab(){
     ids.forEach(function(id){
       var it = ideas[id];
       html += '<div class="idea-card '+(it.done?'done':'')+'">'+
+        '<div class="idea-card-top">'+
         '<div style="flex:1">'+
         '<div class="idea-title '+(it.done?'done':'')+'">'+escapeHtml(it.title)+'</div>'+
         '</div>'+
         '<div style="display:flex;gap:6px;flex-shrink:0">'+
         '<button class="btn-mini confirm" onclick="toggleIdea(\''+id+'\')">'+(it.done?'вернуть':'✓ было')+'</button>'+
         '<button class="btn-mini reject" onclick="deleteIdea(\''+id+'\')">✕</button>'+
-        '</div></div>';
+        '</div></div>'+
+        '<input class="idea-comment-inp" id="idea-comment-'+id+'" type="text" maxlength="200" placeholder="комментарий (необязательно)" value="'+escapeHtml(it.comment||'')+'" onkeydown="if(event.key===\'Enter\'){this.blur();}" onblur="saveIdeaComment(\''+id+'\')">'+
+        '</div>';
     });
   }
   html += '</div>';
