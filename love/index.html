@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Наши окна</title>
+<title>Общее время</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,wght@0,400;0,500;0,600;1,400;1,500&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -146,6 +146,11 @@
   .save-status.err{color:var(--danger);}
   .busy-row{display:flex;align-items:center;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--line);font-size:12.5px;}
   .busy-row:last-child{border-bottom:none;}
+  .shift-card{border:1px solid var(--line);border-radius:12px;padding:10px 12px;background:var(--bg);margin-bottom:10px;}
+  .shift-card-head{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:8px;}
+  .shift-card-title{font-size:12.5px;font-weight:600;}
+  .shift-state{font-size:11px;color:var(--muted);}
+  .field-row{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
 
   /* Ideas */
   .idea-card{border:1px solid var(--line);border-radius:10px;padding:10px 12px;background:var(--bg);display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:8px;}
@@ -158,6 +163,20 @@
   .tabs{display:flex;gap:6px;margin-bottom:1.2rem;}
   .tab-btn{padding:7px 14px;border-radius:999px;border:1px solid var(--line);background:var(--bg-alt);font-size:12.5px;color:var(--muted);cursor:pointer;font-family:inherit;}
   .tab-btn.active{background:var(--ink);color:#fff;border-color:var(--ink);}
+  .list-tools{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:16px;align-items:start;}
+  .inline-form{display:flex;gap:8px;align-items:center;margin-bottom:10px;}
+  .inline-form input{flex:1;border:1px solid var(--line);border-radius:8px;padding:9px 11px;font-size:13px;outline:none;background:var(--bg);font-family:inherit;}
+  .stack-form{display:grid;gap:8px;margin-bottom:10px;}
+  .stack-form input{width:100%;border:1px solid var(--line);border-radius:8px;padding:9px 11px;font-size:13px;outline:none;background:var(--bg);font-family:inherit;}
+  .inline-form input:focus,.stack-form input:focus{border-color:var(--gold);}
+  .watch-card{border:1px solid var(--line);border-radius:10px;padding:10px 12px;background:var(--bg);margin-bottom:8px;}
+  .watch-top{display:flex;align-items:flex-start;justify-content:space-between;gap:8px;}
+  .watch-title{font-size:13px;font-weight:500;overflow-wrap:anywhere;}
+  .watch-meta{font-size:11px;color:var(--muted);margin-top:2px;overflow-wrap:anywhere;}
+  .like-row{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;}
+  .like-btn{border:1px solid currentColor;background:var(--bg-alt);border-radius:999px;padding:6px 10px;font-size:11.5px;cursor:pointer;font-family:inherit;}
+  .accent-row{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:10px;font-size:11.5px;color:var(--muted);}
+  .accent-row input[type=color]{width:38px;height:30px;border:1px solid var(--line);border-radius:7px;background:var(--bg-alt);padding:2px;}
 
   /* Modal */
   .modal-bg{position:fixed;inset:0;background:rgba(43,33,48,0.45);display:flex;align-items:center;justify-content:center;z-index:100;padding:1rem;}
@@ -178,6 +197,9 @@
     .planner{grid-template-columns:1fr;}
     .stats{grid-template-columns:1fr 1fr;}
     .settings-grid{grid-template-columns:1fr;}
+    .field-row,.list-tools{grid-template-columns:1fr;}
+    .inline-form{align-items:stretch;flex-direction:column;}
+    .inline-form .save-btn{width:100%;}
     .modal-times{grid-template-columns:1fr;gap:0;}
     .day-btn{min-height:48px;}
   }
@@ -187,7 +209,7 @@
 <div class="page">
 
   <div id="gate">
-    <div class="disp">Наши окна</div>
+    <div class="disp">Общее время</div>
     <p>Пароль, чтобы открыть общий график</p>
     <input id="gate-inp" type="password" placeholder="Пароль">
     <div id="gate-err">Неверный пароль</div>
@@ -222,8 +244,8 @@ var DUO_EMAIL = 'love@us.xyz';
 // используем его как быстрый вход для Вовы на дуо-планировщике.
 var VOVA_UID = '4tQbxe4uHbeZ11apRGhBdl9UzSt2';
 
-var MIN_WINDOW_MIN = 30;      // минимальная длительность окна, чтобы его показывать
-var SUGGESTION_STEP_MIN = 30; // шаг быстрых предложений внутри окна
+var MIN_WINDOW_MIN = 30;      // минимальная длительность общего времени, чтобы его показывать
+var SUGGESTION_STEP_MIN = 30; // шаг быстрых предложений внутри общего времени
 var DEFAULT_DURATION_MIN = 90;
 var TIMELINE_HEIGHT_PX = 720;
 var RIBBON_DAYS = 14;
@@ -253,12 +275,19 @@ var monthOffset = 0;
 var selectedDate = null;
 var currentUser = null;
 var fbStarted = false;
-var tab = 'calendar'; // 'calendar' | 'ideas'
+var tab = 'calendar'; // 'calendar' | 'ideas' | 'watch'
 
-var duoConfig = { names: { a: 'Вова', b: 'Диана' }, shiftRef: { a: '', b: '' } };
+var duoConfig = {
+  names: { a: 'Вова', b: 'Диана' },
+  shiftRef: { a: '', b: '' },
+  shiftTime: { a: { start: '23:00', end: '11:00' }, b: { start: '09:00', end: '21:00' } }
+};
 var busyData  = { a: {}, b: {} };   // busyData.a['2026-07-12'] = { key: {start,end,label} }
-var plans     = {};                 // plans[id] = {date,startTime,endTime,title,notes,proposedBy,status,ts}
+var shiftOverrides = { a: {}, b: {} }; // shiftOverrides.b['2026-07-12'] = { mode, start, end, note }
+var plans     = {};                 // plans[id] = {date,startTime,endTime,title,notes,status,ts}
 var ideas     = {};                 // ideas[id] = {title,category,cost,done,ts}
+var watchItems = {};
+var uiSettings = {};
 
 var whoAmI = localStorage.getItem('duo_who') || 'a';
 
@@ -284,7 +313,7 @@ function loginGoogle() {
   if (btn) btn.disabled = true;
   auth.signInWithPopup(new firebase.auth.GoogleAuthProvider())
     .then(function(result){
-      // если через Google вошёл именно Вова — сразу подставляем его как "кто ты"
+      // если через Google вошёл именно Вова — запоминаем его локальный профиль
       if (result.user && result.user.uid === VOVA_UID) { setWho('a'); }
       openApp();
     })
@@ -324,12 +353,16 @@ function openApp() {
       if (v) {
         duoConfig.names = v.names || duoConfig.names;
         duoConfig.shiftRef = v.shiftRef || duoConfig.shiftRef;
+        duoConfig.shiftTime = v.shiftTime || duoConfig.shiftTime;
       }
       render();
     });
     db.ref('duo/busy').on('value', function(snap){ busyData = snap.val() || { a:{}, b:{} }; if(!busyData.a) busyData.a={}; if(!busyData.b) busyData.b={}; render(); });
+    db.ref('duo/shiftOverrides').on('value', function(snap){ shiftOverrides = snap.val() || { a:{}, b:{} }; if(!shiftOverrides.a) shiftOverrides.a={}; if(!shiftOverrides.b) shiftOverrides.b={}; render(); });
     db.ref('duo/plans').on('value', function(snap){ plans = snap.val() || {}; render(); });
     db.ref('duo/ideas').on('value', function(snap){ ideas = snap.val() || {}; render(); });
+    db.ref('duo/watchItems').on('value', function(snap){ watchItems = snap.val() || {}; render(); });
+    db.ref('duo/uiSettings').on('value', function(snap){ uiSettings = snap.val() || {}; render(); });
   }
 }
 
@@ -382,9 +415,17 @@ function otherPerson(p){ return p === 'a' ? 'b' : 'a'; }
 function personName(p){ return (duoConfig.names && duoConfig.names[p]) || (p === 'a' ? 'Партнёр A' : 'Партнёр B'); }
 
 // ============================================================
-// Shift schedule (2/2, ночная смена 23:00-11:00) — по каждому человеку своя дата отсчёта
+// Shift schedule (2/2) - по каждому человеку своя дата отсчёта, время и переносы
 // ============================================================
-function isWorkDayFor(person, dateStr){
+function getDefaultShiftTime(person){
+  var fallback = person === 'b' ? { start:'09:00', end:'21:00' } : { start:'23:00', end:'11:00' };
+  var cfg = duoConfig.shiftTime && duoConfig.shiftTime[person];
+  return {
+    start: (cfg && cfg.start) || fallback.start,
+    end: (cfg && cfg.end) || fallback.end
+  };
+}
+function isGeneratedWorkDayFor(person, dateStr){
   var ref = duoConfig.shiftRef && duoConfig.shiftRef[person];
   if (!ref) return false;
   var refD = new Date(ref+'T00:00:00');
@@ -393,10 +434,47 @@ function isWorkDayFor(person, dateStr){
   var pos = ((diff % 4) + 4) % 4;
   return pos < 2; // 0,1 = смена; 2,3 = выходной
 }
+function getShiftForStartDate(person, dateStr){
+  var override = shiftOverrides[person] && shiftOverrides[person][dateStr];
+  var def = getDefaultShiftTime(person);
+  if (override && override.mode === 'off') return null;
+  if (override && override.mode === 'work') {
+    return {
+      start: override.start || def.start,
+      end: override.end || def.end,
+      note: override.note || 'перенесённая смена',
+      manual: true
+    };
+  }
+  if (!isGeneratedWorkDayFor(person, dateStr)) return null;
+  return {
+    start: def.start,
+    end: def.end,
+    note: 'смена',
+    manual: false
+  };
+}
+function isWorkDayFor(person, dateStr){
+  return !!getShiftForStartDate(person, dateStr);
+}
 function getWorkIntervals(person, dateStr){
   var out = [];
-  if (isWorkDayFor(person, addDays(dateStr,-1))) out.push({start:0, end:11*60, owner:person, kind:'work'});
-  if (isWorkDayFor(person, dateStr)) out.push({start:23*60, end:24*60, owner:person, kind:'work'});
+  var prevShift = getShiftForStartDate(person, addDays(dateStr,-1));
+  if (prevShift) {
+    var ps = parseTimeToMinutes(prevShift.start);
+    var pe = parseTimeToMinutes(prevShift.end);
+    if (ps !== null && pe !== null && pe <= ps && pe > 0) {
+      out.push({start:0, end:pe, owner:person, kind:'work', label:prevShift.note||'смена'});
+    }
+  }
+  var shift = getShiftForStartDate(person, dateStr);
+  if (shift) {
+    var s = parseTimeToMinutes(shift.start);
+    var e = parseTimeToMinutes(shift.end);
+    if (s !== null && e !== null) {
+      out.push({start:s, end:e <= s ? 1440 : e, owner:person, kind:'work', label:shift.note||'смена'});
+    }
+  }
   return out;
 }
 function getBusyIntervals(person, dateStr){
@@ -588,7 +666,7 @@ function submitPlan(){
     endTime: formatMinutes(endMin),
     title: title,
     notes: notesInp.value.trim(),
-    proposedBy: whoAmI,
+    proposedBy: 'shared',
     status: 'pending',
     ts: Date.now()
   }).then(function(){ planModal = null; render(); })
@@ -596,7 +674,7 @@ function submitPlan(){
 }
 function confirmPlan(id){ db.ref('duo/plans/'+id+'/status').set('confirmed'); }
 function unconfirmPlan(id){ db.ref('duo/plans/'+id+'/status').set('pending'); }
-function deletePlan(id){ if (confirm('Удалить это свидание?')) db.ref('duo/plans/'+id).remove(); }
+function deletePlan(id){ if (confirm('Удалить эту активность?')) db.ref('duo/plans/'+id).remove(); }
 function openEditPlan(id){
   var p = plans[id]; if (!p) return;
   editPlanModal = { id:id, date:p.date, startTime:p.startTime, endTime:p.endTime, title:p.title||'', notes:p.notes||'', status:p.status||'pending' };
@@ -641,9 +719,49 @@ function saveSettings(){
   var nameB = document.getElementById('set-name-b').value.trim() || 'Партнёр B';
   var refA = document.getElementById('set-ref-a').value;
   var refB = document.getElementById('set-ref-b').value;
-  db.ref('duo/config').set({ names:{a:nameA,b:nameB}, shiftRef:{a:refA,b:refB} })
+  var aStart = document.getElementById('set-shift-a-start').value || '23:00';
+  var aEnd = document.getElementById('set-shift-a-end').value || '11:00';
+  var bStart = document.getElementById('set-shift-b-start').value || '09:00';
+  var bEnd = document.getElementById('set-shift-b-end').value || '21:00';
+  if (parseTimeToMinutes(aStart)===null || parseTimeToMinutes(aEnd)===null || parseTimeToMinutes(bStart)===null || parseTimeToMinutes(bEnd)===null) {
+    saveStatus = 'Проверьте время смен';
+    saveStatusType = 'err';
+    render();
+    return;
+  }
+  db.ref('duo/config').set({ names:{a:nameA,b:nameB}, shiftRef:{a:refA,b:refB}, shiftTime:{a:{start:aStart,end:aEnd}, b:{start:bStart,end:bEnd}} })
     .then(function(){ saveStatus = 'Сохранено'; saveStatusType = 'ok'; render(); })
     .catch(function(err){ saveStatus = 'Ошибка: '+err.message; saveStatusType='err'; render(); });
+}
+
+function saveShiftOverride(person, dateStr){
+  var mode = document.getElementById('shift-mode-'+person).value;
+  if (mode === 'auto') {
+    deleteShiftOverride(person, dateStr);
+    return;
+  }
+  var payload = { mode: mode };
+  if (mode === 'work') {
+    var def = getDefaultShiftTime(person);
+    var start = document.getElementById('shift-start-'+person).value || def.start;
+    var end = document.getElementById('shift-end-'+person).value || def.end;
+    if (parseTimeToMinutes(start)===null || parseTimeToMinutes(end)===null) {
+      alert('Укажите корректное время смены.');
+      return;
+    }
+    payload.start = start;
+    payload.end = end;
+    payload.note = (document.getElementById('shift-note-'+person).value || '').trim().slice(0, 60);
+  }
+  db.ref('duo/shiftOverrides/'+person+'/'+dateStr).set(payload).catch(function(err){
+    alert('Ошибка: '+err.message);
+  });
+}
+
+function deleteShiftOverride(person, dateStr){
+  db.ref('duo/shiftOverrides/'+person+'/'+dateStr).remove().catch(function(err){
+    alert('Ошибка: '+err.message);
+  });
 }
 
 // ============================================================
@@ -651,21 +769,65 @@ function saveSettings(){
 // ============================================================
 function openIdeaModal(){ ideaModal = true; render(); }
 function closeIdeaModal(){ ideaModal = false; render(); }
-function submitIdea(){
+function addIdeaInline(){
   var t = document.getElementById('idea-title-inp').value.trim();
-  var c = document.getElementById('idea-cat-inp').value;
-  var cost = document.getElementById('idea-cost-inp').value;
-  if (!t){ alert('Напишите идею.'); return; }
-  db.ref('duo/ideas').push({ title:t, category:c, cost:cost, done:false, ts:Date.now() })
-    .then(function(){ ideaModal = false; render(); });
+  if (!t){ document.getElementById('idea-title-inp').style.borderColor = '#b33f3f'; return; }
+  db.ref('duo/ideas').push({ title:t, done:false, ts:Date.now() })
+    .then(function(){ document.getElementById('idea-title-inp').value = ''; });
 }
+function submitIdea(){ addIdeaInline(); ideaModal = false; render(); }
 function toggleIdea(id){ db.ref('duo/ideas/'+id+'/done').set(!ideas[id].done); }
 function deleteIdea(id){ if (confirm('Удалить идею?')) db.ref('duo/ideas/'+id).remove(); }
 function setTab(t){ tab = t; render(); }
 function logout(){ auth.signOut(); }
 
 // ============================================================
-// Signature: rhythm ribbon (следующие 14 дней, две ленты смен + золотые окна)
+// Actions: watch list
+// ============================================================
+function normalizeHexColor(value, fallback){
+  if (/^#[0-9a-fA-F]{6}$/.test(value || '')) return value;
+  return fallback;
+}
+function getBlueAccent(){ return normalizeHexColor(uiSettings.blueAccent, '#4c6b8a'); }
+function getPinkAccent(){ return normalizeHexColor(uiSettings.pinkAccent, '#b5566b'); }
+function saveAccentSettings(){
+  var blue = normalizeHexColor(document.getElementById('blue-accent').value, getBlueAccent());
+  var pink = normalizeHexColor(document.getElementById('pink-accent').value, getPinkAccent());
+  db.ref('duo/uiSettings').update({ blueAccent: blue, pinkAccent: pink }).catch(function(err){
+    alert('Ошибка: '+err.message);
+  });
+}
+function addWatchItem(){
+  var titleEl = document.getElementById('watch-title-inp');
+  var typeEl = document.getElementById('watch-type-inp');
+  var genreEl = document.getElementById('watch-genre-inp');
+  var title = titleEl.value.trim();
+  if (!title){ titleEl.style.borderColor = '#b33f3f'; return; }
+  titleEl.style.borderColor = '';
+  db.ref('duo/watchItems').push({
+    title: title,
+    type: (typeEl.value || '').trim(),
+    genre: (genreEl.value || '').trim(),
+    likes: { blue: 0, pink: 0 },
+    ts: Date.now()
+  }).then(function(){
+    titleEl.value = '';
+    typeEl.value = '';
+    genreEl.value = '';
+  }).catch(function(err){ alert('Ошибка: '+err.message); });
+}
+function likeWatchItem(id, colorKey){
+  if (colorKey !== 'blue' && colorKey !== 'pink') return;
+  db.ref('duo/watchItems/'+id+'/likes/'+colorKey).transaction(function(value){
+    return (value || 0) + 1;
+  }).catch(function(err){ alert('Ошибка: '+err.message); });
+}
+function deleteWatchItem(id){
+  if (confirm('Удалить из списка?')) db.ref('duo/watchItems/'+id).remove();
+}
+
+// ============================================================
+// Signature: rhythm ribbon (следующие 14 дней, две ленты смен + золотое общее время)
 // ============================================================
 function renderRibbon(){
   var days = [];
@@ -710,6 +872,35 @@ function renderRibbon(){
   return svg;
 }
 
+function renderShiftEditor(person, dateStr){
+  var override = shiftOverrides[person] && shiftOverrides[person][dateStr];
+  var shift = getShiftForStartDate(person, dateStr);
+  var def = getDefaultShiftTime(person);
+  var mode = override ? override.mode : 'auto';
+  var start = override && override.start ? override.start : def.start;
+  var end = override && override.end ? override.end : def.end;
+  var state = shift ? (shift.start+'–'+shift.end) : 'выходной';
+  var html = '<div class="shift-card">';
+  html += '<div class="shift-card-head"><div class="shift-card-title">'+escapeHtml(personName(person))+'</div>'+
+    '<div class="shift-state">'+escapeHtml(state)+' · '+(override?'ручное':'по циклу')+'</div></div>';
+  html += '<div class="settings-grid" style="margin-bottom:8px">';
+  html += '<div class="field"><label>Режим дня</label><select id="shift-mode-'+person+'">'+
+    '<option value="auto"'+(mode==='auto'?' selected':'')+'>По циклу</option>'+
+    '<option value="work"'+(mode==='work'?' selected':'')+'>Рабочая смена</option>'+
+    '<option value="off"'+(mode==='off'?' selected':'')+'>Выходной / убрать смену</option>'+
+    '</select></div>';
+  html += '<div class="field-row"><div class="field"><label>С</label><input id="shift-start-'+person+'" type="time" step="300" value="'+escapeHtml(start)+'"></div>'+
+    '<div class="field"><label>До</label><input id="shift-end-'+person+'" type="time" step="300" value="'+escapeHtml(end)+'"></div></div>';
+  html += '</div>';
+  html += '<div class="field"><label>Заметка</label><input id="shift-note-'+person+'" type="text" maxlength="60" placeholder="например: перенос смены" value="'+escapeHtml(override ? (override.note || '') : '')+'"></div>';
+  html += '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px">'+
+    '<button class="save-btn" onclick="saveShiftOverride(\''+person+'\',\''+dateStr+'\')">Сохранить для дня</button>'+
+    (override ? '<button class="btn-mini reject" onclick="deleteShiftOverride(\''+person+'\',\''+dateStr+'\')">Сбросить</button>' : '')+
+    '</div>';
+  html += '</div>';
+  return html;
+}
+
 // ============================================================
 // Render
 // ============================================================
@@ -743,12 +934,10 @@ function render(){
 
   // Header
   html += '<div class="top"><div>'+
-    '<div class="disp">Наши окна</div>'+
-    '<p>Общий график для двоих со смещёнными сменами 2/2. Золотая рамка = оба свободны.</p>'+
+    '<div class="disp">Общее время</div>'+
+    '<p>Общий график для двоих со сменами, переносами и активностями. Золотая рамка = оба свободны.</p>'+
     '</div>';
   html += '<div class="top-actions">';
-  html += '<button class="chip-btn '+(whoAmI==='a'?'who-a':'')+'" onclick="setWho(\'a\')">'+escapeHtml(personName('a'))+'</button>';
-  html += '<button class="chip-btn '+(whoAmI==='b'?'who-b':'')+'" onclick="setWho(\'b\')">'+escapeHtml(personName('b'))+'</button>';
   html += '<button class="chip-btn" onclick="toggleSettings()">⚙ Настройки</button>';
   html += '<button class="chip-btn" onclick="logout()">Выйти</button>';
   html += '</div></div>';
@@ -757,15 +946,26 @@ function render(){
   if (settingsOpen){
     html += '<div class="panel" style="margin-bottom:1.4rem">';
     html += '<h3>Настройки графика</h3>';
-    html += '<div class="panel-sub">Укажите дату начала первой рабочей смены (2/2, ночная 23:00–11:00) для каждого — так система посчитает, когда вы оба свободны.</div>';
+    html += '<div class="panel-sub">Укажите дату начала первой рабочей смены 2/2 и обычное время смены. Для Дианы по умолчанию стоит дневная смена 09:00–21:00.</div>';
     html += '<div class="settings-grid">';
     html += '<div class="field"><label>Имя — партнёр A</label><input id="set-name-a" type="text" value="'+escapeHtml(duoConfig.names.a)+'"></div>';
     html += '<div class="field"><label>Имя — партнёр B</label><input id="set-name-b" type="text" value="'+escapeHtml(duoConfig.names.b)+'"></div>';
     html += '<div class="field"><label>Первый рабочий день — '+escapeHtml(duoConfig.names.a)+'</label><input id="set-ref-a" type="date" value="'+escapeHtml(duoConfig.shiftRef.a||'')+'"></div>';
     html += '<div class="field"><label>Первый рабочий день — '+escapeHtml(duoConfig.names.b)+'</label><input id="set-ref-b" type="date" value="'+escapeHtml(duoConfig.shiftRef.b||'')+'"></div>';
+    var aShift = getDefaultShiftTime('a');
+    var bShift = getDefaultShiftTime('b');
+    html += '<div class="field-row"><div class="field"><label>Смена '+escapeHtml(duoConfig.names.a)+' с</label><input id="set-shift-a-start" type="time" step="300" value="'+escapeHtml(aShift.start)+'"></div><div class="field"><label>до</label><input id="set-shift-a-end" type="time" step="300" value="'+escapeHtml(aShift.end)+'"></div></div>';
+    html += '<div class="field-row"><div class="field"><label>Смена '+escapeHtml(duoConfig.names.b)+' с</label><input id="set-shift-b-start" type="time" step="300" value="'+escapeHtml(bShift.start)+'"></div><div class="field"><label>до</label><input id="set-shift-b-end" type="time" step="300" value="'+escapeHtml(bShift.end)+'"></div></div>';
     html += '</div>';
     html += '<button class="save-btn" onclick="saveSettings()">Сохранить</button>';
     if (saveStatus) html += '<div class="save-status '+saveStatusType+'">'+escapeHtml(saveStatus)+'</div>';
+
+    html += '<div style="margin-top:16px;border-top:1px solid var(--line);padding-top:12px">';
+    html += '<div class="section-title">Переносы смен на '+escapeHtml(formatLongDate(selectedDate))+'</div>';
+    html += renderShiftEditor('a', selectedDate);
+    html += renderShiftEditor('b', selectedDate);
+    html += '<div style="font-size:11.5px;color:var(--muted)">Для переноса поставьте старый день выходным, а новый день рабочей сменой.</div>';
+    html += '</div>';
 
     // manual busy blocks for selected date
     html += '<div style="margin-top:16px;border-top:1px solid var(--line);padding-top:12px">';
@@ -793,9 +993,9 @@ function render(){
   // Stats
   html += '<div class="stats">';
   html += '<div class="stat-card"><div class="stat-num">'+(nextConfirmed ? daysBetween(today, nextConfirmed.data.date) : '—')+'</div>'+
-    '<div class="stat-label">'+(nextConfirmed ? 'дней до «'+escapeHtml(nextConfirmed.data.title)+'» ('+escapeHtml(nextConfirmed.data.date)+')' : 'пока нет подтверждённых свиданий')+'</div></div>';
+    '<div class="stat-label">'+(nextConfirmed ? 'дней до «'+escapeHtml(nextConfirmed.data.title)+'» ('+escapeHtml(nextConfirmed.data.date)+')' : 'пока нет подтверждённых активностей')+'</div></div>';
   html += '<div class="stat-card"><div class="stat-num">'+(lastConfirmed ? daysBetween(lastConfirmed.data.date, today) : '—')+'</div>'+
-    '<div class="stat-label">'+(lastConfirmed ? 'дней с последнего свидания' : 'история пока пуста')+'</div></div>';
+    '<div class="stat-label">'+(lastConfirmed ? 'дней с последней активности' : 'история пока пуста')+'</div></div>';
   html += '</div>';
 
   // Ribbon
@@ -806,14 +1006,15 @@ function render(){
     '<div><i style="background:#4c6b8a"></i>'+escapeHtml(personName('a'))+' на смене</div>'+
     '<div><i style="background:#b5566b"></i>'+escapeHtml(personName('b'))+' на смене</div>'+
     '<div><i style="border:2px solid #c08a2e;background:none"></i>оба свободны в этот день</div>'+
-    '<div><i style="background:#5b8266;border-radius:999px"></i>свидание подтверждено</div>'+
+    '<div><i style="background:#5b8266;border-radius:999px"></i>активность подтверждена</div>'+
     '</div>';
   html += '</div>';
 
   // Tabs
   html += '<div class="tabs">';
   html += '<button class="tab-btn '+(tab==='calendar'?'active':'')+'" onclick="setTab(\'calendar\')">Календарь</button>';
-  html += '<button class="tab-btn '+(tab==='ideas'?'active':'')+'" onclick="setTab(\'ideas\')">Идеи для свиданий</button>';
+  html += '<button class="tab-btn '+(tab==='ideas'?'active':'')+'" onclick="setTab(\'ideas\')">Идеи активностей</button>';
+  html += '<button class="tab-btn '+(tab==='watch'?'active':'')+'" onclick="setTab(\'watch\')">Что посмотреть</button>';
   html += '</div>';
 
   if (tab==='ideas'){
@@ -821,11 +1022,16 @@ function render(){
     root.innerHTML = html + renderModals();
     return;
   }
+  if (tab==='watch'){
+    html += renderWatchTab();
+    root.innerHTML = html + renderModals();
+    return;
+  }
 
   // Legend
   html += '<div class="ribbon-legend" style="margin-bottom:10px">'+
-    '<div><i style="background:var(--gold-soft);border:1px solid var(--gold-line)"></i>свободное окно</div>'+
-    '<div><i style="background:var(--sage-soft);border:1px solid var(--sage-line)"></i>свидание</div>'+
+    '<div><i style="background:var(--gold-soft);border:1px solid var(--gold-line)"></i>общее свободное время</div>'+
+    '<div><i style="background:var(--sage-soft);border:1px solid var(--sage-line)"></i>активность</div>'+
     '<div><i style="background:var(--line)"></i>кто-то занят</div>'+
     '</div>';
 
@@ -853,8 +1059,8 @@ function render(){
 
     var tag = '';
     if (inMonth && !past){
-      if (status==='plan') tag = '<span class="day-tag tag-plan">свидание</span>';
-      else if (status==='free') tag = '<span class="day-tag tag-free">окно есть</span>';
+      if (status==='plan') tag = '<span class="day-tag tag-plan">план</span>';
+      else if (status==='free') tag = '<span class="day-tag tag-free">есть время</span>';
       else tag = '<span class="day-tag tag-busy">заняты</span>';
     }
     html += '<button class="'+classes.join(' ')+'"'+(inMonth && !past ? ' onclick="selectDate(\''+key+'\')"' : ' disabled')+'>'+
@@ -868,16 +1074,16 @@ function render(){
   html += '<div class="selected-sub">'+(isTodayKey(selectedDate) ? 'сегодня' : 'выбранный день')+'</div>';
 
   html += '<div class="block">';
-  html += '<div class="section-title">Свободные окна вдвоём</div>';
+  html += '<div class="section-title">Время для планов</div>';
   if (selectedFree.length){
     html += '<div class="window-list">';
     selectedFree.forEach(function(iv){
       var quickEnd = Math.min(iv[1], iv[0]+DEFAULT_DURATION_MIN);
       html += '<div class="window-row"><div class="window-time">'+formatMinutes(iv[0])+' – '+formatMinutes(iv[1])+'</div>'+
-        '<div class="window-actions"><button class="time-chip" onclick="openPlanModal(\''+selectedDate+'\',\''+formatMinutes(iv[0])+'\',\''+formatMinutes(quickEnd)+'\')">Предложить в это окно</button></div></div>';
+        '<div class="window-actions"><button class="time-chip" onclick="openPlanModal(\''+selectedDate+'\',\''+formatMinutes(iv[0])+'\',\''+formatMinutes(quickEnd)+'\')">Предложить активность</button></div></div>';
     });
     html += '</div>';
-    html += '<button class="custom-btn" onclick="openCustomPlan(\''+selectedDate+'\')">Выбрать своё время внутри окна</button>';
+    html += '<button class="custom-btn" onclick="openCustomPlan(\''+selectedDate+'\')">Выбрать своё время</button>';
   } else {
     html += '<div class="empty-state">в этот день пересечений нет :( попробуйте соседний день</div>';
   }
@@ -912,13 +1118,13 @@ function render(){
   html += '</div>';
 
   html += '<div class="block">';
-  html += '<div class="section-title">Свидания на этот день</div>';
+  html += '<div class="section-title">Активности на этот день</div>';
   if (dayPlans.length){
     dayPlans.forEach(function(entry){
       var p = entry.data;
       html += '<div class="plan-row"><div class="plan-info"><div class="plan-title">'+escapeHtml(p.title)+
         '<span class="pill '+(p.status==='confirmed'?'pill-confirmed':'pill-pending')+'">'+(p.status==='confirmed'?'подтверждено':'ожидает')+'</span></div>'+
-        '<div class="plan-when">'+escapeHtml(p.startTime)+'–'+escapeHtml(p.endTime)+' · предложил(а) '+escapeHtml(personName(p.proposedBy))+'</div>'+
+        '<div class="plan-when">'+escapeHtml(p.startTime)+'–'+escapeHtml(p.endTime)+'</div>'+
         (p.notes ? '<div class="plan-note">'+escapeHtml(p.notes)+'</div>' : '')+'</div>'+
         '<div class="plan-actions">';
       if (p.status==='pending'){
@@ -945,19 +1151,19 @@ function renderIdeasTab(){
   var html = '';
   html += '<div class="panel">';
   html += '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">';
-  html += '<h3 style="margin-bottom:0">Общий список идей</h3>';
-  html += '<button class="chip-btn" onclick="openIdeaModal()">+ добавить</button>';
+  html += '<h3 style="margin-bottom:0">Идеи активностей</h3>';
   html += '</div>';
+  html += '<div class="panel-sub">Просто идеи, без категорий, бюджета и привязки к человеку.</div>';
+  html += '<div class="inline-form"><input id="idea-title-inp" type="text" placeholder="например: сходить в новое кафе" maxlength="80" onkeydown="if(event.key===\'Enter\')addIdeaInline()"><button class="save-btn" onclick="addIdeaInline()">Добавить</button></div>';
   var ids = Object.keys(ideas).sort(function(a,b){ return (ideas[a].done?1:0)-(ideas[b].done?1:0) || (ideas[b].ts||0)-(ideas[a].ts||0); });
   if (!ids.length){
-    html += '<div class="empty-state">Пока пусто — накидайте, куда сходить и что попробовать вдвоём.</div>';
+    html += '<div class="empty-state">Пока пусто — накидайте всё, что звучит приятно.</div>';
   } else {
     ids.forEach(function(id){
       var it = ideas[id];
       html += '<div class="idea-card '+(it.done?'done':'')+'">'+
         '<div style="flex:1">'+
         '<div class="idea-title '+(it.done?'done':'')+'">'+escapeHtml(it.title)+'</div>'+
-        '<div class="idea-meta">'+(it.category?'<span class="idea-cat">'+escapeHtml(it.category)+'</span>':'')+(it.cost?'~'+escapeHtml(it.cost)+' ₽':'')+'</div>'+
         '</div>'+
         '<div style="display:flex;gap:6px;flex-shrink:0">'+
         '<button class="btn-mini confirm" onclick="toggleIdea(\''+id+'\')">'+(it.done?'вернуть':'✓ было')+'</button>'+
@@ -969,12 +1175,61 @@ function renderIdeasTab(){
   return html;
 }
 
+function renderWatchTab(){
+  var blue = getBlueAccent();
+  var pink = getPinkAccent();
+  var ids = Object.keys(watchItems).sort(function(a,b){
+    var ai = watchItems[a] || {};
+    var bi = watchItems[b] || {};
+    var al = ((ai.likes||{}).blue||0) + ((ai.likes||{}).pink||0);
+    var bl = ((bi.likes||{}).blue||0) + ((bi.likes||{}).pink||0);
+    if (bl !== al) return bl - al;
+    return (bi.ts||0) - (ai.ts||0);
+  });
+  var html = '<div class="panel">';
+  html += '<h3>Что хотим посмотреть</h3>';
+  html += '<div class="panel-sub">Можно добавить только название, а тип и жанр оставить пустыми.</div>';
+  html += '<div class="stack-form">'+
+    '<input id="watch-title-inp" type="text" placeholder="Название" maxlength="100">'+
+    '<div class="field-row">'+
+    '<input id="watch-type-inp" type="text" placeholder="тип: фильм, сериал, аниме" maxlength="40">'+
+    '<input id="watch-genre-inp" type="text" placeholder="жанр" maxlength="40">'+
+    '</div>'+
+    '<button class="save-btn" onclick="addWatchItem()">Добавить</button>'+
+    '</div>';
+  if (!ids.length) {
+    html += '<div class="empty-state">Список пуст. Можно начать с одного названия.</div>';
+  } else {
+    ids.forEach(function(id){
+      var item = watchItems[id] || {};
+      var likes = item.likes || {};
+      var meta = [item.type, item.genre].filter(Boolean).join(' / ');
+      html += '<div class="watch-card"><div class="watch-top"><div>'+
+        '<div class="watch-title">'+escapeHtml(item.title || 'Без названия')+'</div>'+
+        (meta ? '<div class="watch-meta">'+escapeHtml(meta)+'</div>' : '')+
+        '</div><button class="btn-mini reject" onclick="deleteWatchItem(\''+id+'\')">✕</button></div>'+
+        '<div class="like-row">'+
+        '<button class="like-btn" style="color:'+blue+'" onclick="likeWatchItem(\''+id+'\',\'blue\')">Синий лайк '+((likes.blue||0))+'</button>'+
+        '<button class="like-btn" style="color:'+pink+'" onclick="likeWatchItem(\''+id+'\',\'pink\')">Розовый лайк '+((likes.pink||0))+'</button>'+
+        '</div></div>';
+    });
+  }
+  html += '<div class="accent-row">'+
+    '<span>Акценты:</span>'+
+    '<label>синий <input id="blue-accent" type="color" value="'+blue+'"></label>'+
+    '<label>розовый <input id="pink-accent" type="color" value="'+pink+'"></label>'+
+    '<button class="btn-mini edit" onclick="saveAccentSettings()">Сохранить цвета</button>'+
+    '</div>';
+  html += '</div>';
+  return html;
+}
+
 function renderModals(){
   var html = '';
 
   if (planModal){
     html += '<div class="modal-bg" onclick="if(event.target===this)closePlanModal()"><div class="modal">'+
-      '<h3>Предложить свидание</h3><p>'+escapeHtml(formatLongDate(planModal.dateStr))+' · от лица: '+escapeHtml(personName(whoAmI))+'</p>'+
+      '<h3>Предложить активность</h3><p>'+escapeHtml(formatLongDate(planModal.dateStr))+'</p>'+
       '<div class="modal-times">'+
       '<label>Начало<input id="plan-start-inp" type="time" step="300" value="'+escapeHtml(planModal.startTime)+'"></label>'+
       '<label>Конец<input id="plan-end-inp" type="time" step="300" value="'+escapeHtml(planModal.endTime)+'"></label>'+
@@ -988,7 +1243,7 @@ function renderModals(){
 
   if (editPlanModal){
     html += '<div class="modal-bg" onclick="if(event.target===this)closeEditPlan()"><div class="modal">'+
-      '<h3>Редактировать свидание</h3>'+
+      '<h3>Редактировать активность</h3>'+
       '<label style="font-size:11.5px;color:var(--muted);display:block;margin-bottom:4px">Дата</label>'+
       '<input id="edit-date-inp" type="date" value="'+escapeHtml(editPlanModal.date)+'">'+
       '<div class="modal-times">'+
