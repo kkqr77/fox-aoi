@@ -808,7 +808,7 @@ function addWatchItem(){
     title: title,
     type: (typeEl.value || '').trim(),
     genre: (genreEl.value || '').trim(),
-    likes: { blue: 0, pink: 0 },
+    likes: { blue: false, pink: false },
     ts: Date.now()
   }).then(function(){
     titleEl.value = '';
@@ -818,9 +818,12 @@ function addWatchItem(){
 }
 function likeWatchItem(id, colorKey){
   if (colorKey !== 'blue' && colorKey !== 'pink') return;
-  db.ref('duo/watchItems/'+id+'/likes/'+colorKey).transaction(function(value){
-    return (value || 0) + 1;
-  }).catch(function(err){ alert('Ошибка: '+err.message); });
+  var item = watchItems[id];
+  if (!item) return;
+  var current = !!(item.likes && item.likes[colorKey]);
+  db.ref('duo/watchItems/'+id+'/likes/'+colorKey).set(!current).catch(function(err){
+    alert('Ошибка: '+err.message);
+  });
 }
 function deleteWatchItem(id){
   if (confirm('Удалить из списка?')) db.ref('duo/watchItems/'+id).remove();
@@ -854,8 +857,8 @@ function renderRibbon(){
     var yB = padTop+rowH+rowGap;
     svg += '<rect x="'+x+'" y="'+yB+'" width="'+colW+'" height="'+rowH+'" rx="4" fill="'+(workB?'#b5566b':'#f6e4e9')+'" opacity="'+(workB?1:0.55)+'"></rect>';
 
-    // overlap marker (free together) under both rows
-    if (free && !isPastDate(dateStr)){
+    // overlap marker (both off work) under both rows
+    if (!workA && !workB && !isPastDate(dateStr)){
       svg += '<rect x="'+x+'" y="'+padTop+'" width="'+colW+'" height="'+(rowH*2+rowGap)+'" rx="5" fill="none" stroke="#c08a2e" stroke-width="2"></rect>';
     }
     if (hasPlan){
@@ -1153,7 +1156,7 @@ function renderIdeasTab(){
   html += '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">';
   html += '<h3 style="margin-bottom:0">Идеи активностей</h3>';
   html += '</div>';
-  html += '<div class="panel-sub">Просто идеи, без категорий, бюджета и привязки к человеку.</div>';
+  html += '<div class="panel-sub">Просто идеи ;3 </div>';
   html += '<div class="inline-form"><input id="idea-title-inp" type="text" placeholder="например: сходить в новое кафе" maxlength="80" onkeydown="if(event.key===\'Enter\')addIdeaInline()"><button class="save-btn" onclick="addIdeaInline()">Добавить</button></div>';
   var ids = Object.keys(ideas).sort(function(a,b){ return (ideas[a].done?1:0)-(ideas[b].done?1:0) || (ideas[b].ts||0)-(ideas[a].ts||0); });
   if (!ids.length){
@@ -1181,8 +1184,8 @@ function renderWatchTab(){
   var ids = Object.keys(watchItems).sort(function(a,b){
     var ai = watchItems[a] || {};
     var bi = watchItems[b] || {};
-    var al = ((ai.likes||{}).blue||0) + ((ai.likes||{}).pink||0);
-    var bl = ((bi.likes||{}).blue||0) + ((bi.likes||{}).pink||0);
+    var al = ((ai.likes||{}).blue ? 1 : 0) + ((ai.likes||{}).pink ? 1 : 0);
+    var bl = ((bi.likes||{}).blue ? 1 : 0) + ((bi.likes||{}).pink ? 1 : 0);
     if (bl !== al) return bl - al;
     return (bi.ts||0) - (ai.ts||0);
   });
@@ -1209,8 +1212,8 @@ function renderWatchTab(){
         (meta ? '<div class="watch-meta">'+escapeHtml(meta)+'</div>' : '')+
         '</div><button class="btn-mini reject" onclick="deleteWatchItem(\''+id+'\')">✕</button></div>'+
         '<div class="like-row">'+
-        '<button class="like-btn" style="color:'+blue+'" onclick="likeWatchItem(\''+id+'\',\'blue\')">Синий лайк '+((likes.blue||0))+'</button>'+
-        '<button class="like-btn" style="color:'+pink+'" onclick="likeWatchItem(\''+id+'\',\'pink\')">Розовый лайк '+((likes.pink||0))+'</button>'+
+        '<button class="like-btn" style="color:'+blue+'" onclick="likeWatchItem(\''+id+'\',\'blue\')">Синий '+(likes.blue ? '✓' : '—')+'</button>'+
+        '<button class="like-btn" style="color:'+pink+'" onclick="likeWatchItem(\''+id+'\',\'pink\')">Розовый '+(likes.pink ? '✓' : '—')+'</button>'+
         '</div></div>';
     });
   }
