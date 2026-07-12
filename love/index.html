@@ -1,1 +1,1046 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Наши окна</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,wght@0,400;0,500;0,600;1,400;1,500&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#faf3ee; --bg-alt:#ffffff; --ink:#2b2130; --muted:#8a7b85; --line:#ece0dc;
+    --gold:#c08a2e; --gold-soft:#f6e7c9; --gold-line:#e3c27f;
+    --blue:#4c6b8a; --blue-soft:#e4ecf3; --blue-line:#b9cddc;
+    --rose:#b5566b; --rose-soft:#f6e4e9; --rose-line:#e3b7c3;
+    --sage:#5b8266; --sage-soft:#e7f0e7; --sage-line:#b7cfbc;
+    --danger:#b33f3f; --danger-soft:#f7e6e6;
+  }
+  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;background:var(--bg);color:var(--ink);min-height:100vh;-webkit-font-smoothing:antialiased;}
+  .page{max-width:840px;margin:0 auto;padding:2rem 1rem 5rem;}
+  h1,h2,h3,.disp{font-family:'Newsreader',serif;}
+  a{color:inherit;}
 
+  /* Gate */
+  #gate{display:none;max-width:340px;margin:6.5rem auto;text-align:center;}
+  #gate .disp{font-size:26px;font-style:italic;font-weight:500;margin-bottom:6px;}
+  #gate p{font-size:13px;color:var(--muted);margin-bottom:1.5rem;}
+  #gate input{width:100%;border:1px solid var(--line);border-radius:10px;padding:11px 14px;font-size:15px;outline:none;margin-bottom:10px;display:block;background:var(--bg-alt);font-family:inherit;}
+  #gate input:focus{border-color:var(--gold);}
+  #gate-err{color:var(--danger);font-size:12px;margin-bottom:10px;display:none;}
+  #gate button{width:100%;background:var(--ink);color:#fff;border:none;border-radius:10px;padding:12px;font-size:15px;cursor:pointer;font-family:inherit;}
+  #gate button:disabled{opacity:.6;}
+
+  .loader{text-align:center;padding:4rem;color:var(--muted);font-size:14px;font-style:italic;font-family:'Newsreader',serif;}
+
+  /* Header */
+  .top{display:flex;align-items:flex-start;justify-content:space-between;gap:1rem;margin-bottom:1.6rem;}
+  .top .disp{font-size:28px;font-style:italic;font-weight:500;line-height:1.15;}
+  .top p{font-size:13px;color:var(--muted);margin-top:5px;}
+  .top-actions{display:flex;gap:8px;flex-shrink:0;flex-wrap:wrap;justify-content:flex-end;}
+  .chip-btn{padding:7px 13px;border-radius:999px;border:1px solid var(--line);background:var(--bg-alt);font-size:12.5px;color:var(--ink);cursor:pointer;font-family:inherit;white-space:nowrap;}
+  .chip-btn:hover{border-color:var(--gold);}
+  .chip-btn.who-a{border-color:var(--blue-line);background:var(--blue-soft);color:var(--blue);}
+  .chip-btn.who-b{border-color:var(--rose-line);background:var(--rose-soft);color:var(--rose);}
+
+  /* Stat row */
+  .stats{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:1.4rem;}
+  .stat-card{background:var(--bg-alt);border:1px solid var(--line);border-radius:14px;padding:14px 16px;}
+  .stat-num{font-family:'Newsreader',serif;font-style:italic;font-size:26px;color:var(--gold);}
+  .stat-label{font-size:12px;color:var(--muted);margin-top:2px;}
+
+  /* Ribbon (signature element) */
+  .ribbon-card{background:var(--bg-alt);border:1px solid var(--line);border-radius:16px;padding:16px 16px 10px;margin-bottom:1.4rem;}
+  .ribbon-head{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:10px;flex-wrap:wrap;gap:4px;}
+  .ribbon-head h2{font-size:16px;font-weight:500;font-style:italic;}
+  .ribbon-head span{font-size:11.5px;color:var(--muted);}
+  .ribbon-legend{display:flex;gap:14px;flex-wrap:wrap;margin-top:8px;font-size:11px;color:var(--muted);}
+  .ribbon-legend i{display:inline-block;width:9px;height:9px;border-radius:3px;margin-right:5px;position:relative;top:1px;}
+
+  /* Panels / layout */
+  .planner{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(280px,0.9fr);gap:16px;align-items:start;}
+  .panel{background:var(--bg-alt);border:1px solid var(--line);border-radius:16px;padding:16px;}
+  .panel h3{font-size:15px;font-weight:500;font-style:italic;font-family:'Newsreader',serif;margin-bottom:10px;}
+  .panel-sub{font-size:12px;color:var(--muted);margin-bottom:12px;}
+
+  .month-nav{display:flex;align-items:center;gap:8px;margin-bottom:12px;}
+  .nav-btn{background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:5px 12px;cursor:pointer;font-size:14px;color:var(--ink);}
+  .nav-btn:hover{border-color:var(--gold);}
+  .nav-btn:disabled{opacity:.4;cursor:default;}
+  .month-label{flex:1;text-align:center;font-size:14px;font-weight:500;color:var(--ink);text-transform:capitalize;}
+
+  .month-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;}
+  .weekday{text-align:center;font-size:10.5px;color:var(--muted);padding-bottom:2px;}
+  .day-btn{width:100%;min-width:0;min-height:56px;border:1px solid var(--line);border-radius:10px;background:var(--bg-alt);padding:6px;text-align:left;cursor:pointer;display:flex;flex-direction:column;gap:4px;position:relative;overflow:hidden;}
+  .day-btn:hover{border-color:var(--gold);}
+  .day-btn.outside{background:#fbf7f4;color:#c9bcbf;cursor:default;}
+  .day-btn.disabled{background:#f5f0ec;color:#c3b7b9;cursor:default;}
+  .day-btn.selected{border-color:var(--gold);box-shadow:0 0 0 2px rgba(192,138,46,0.18);}
+  .day-btn.today{border-color:var(--blue-line);}
+  .day-num{font-size:13.5px;font-weight:500;}
+  .day-tag{font-size:8.5px;letter-spacing:.02em;border-radius:4px;padding:1px 4px;display:inline-block;width:fit-content;}
+  .tag-free{background:var(--gold-soft);color:#8a611c;}
+  .tag-plan{background:var(--sage-soft);color:#3f5f49;}
+  .tag-busy{background:var(--line);color:var(--muted);}
+
+  .selected-date{font-size:19px;font-weight:500;font-style:italic;font-family:'Newsreader',serif;margin-bottom:2px;}
+  .selected-sub{font-size:12px;color:var(--muted);margin-bottom:14px;}
+  .section-title{font-size:12.5px;font-weight:600;color:var(--ink);margin-bottom:8px;text-transform:uppercase;letter-spacing:.03em;opacity:.7;}
+  .block+.block{margin-top:16px;}
+
+  .window-list{display:flex;flex-direction:column;gap:8px;}
+  .window-row{border:1px solid var(--gold-line);border-radius:10px;padding:10px 12px;background:var(--gold-soft);}
+  .window-time{font-size:14px;font-weight:600;color:#8a611c;}
+  .window-actions{margin-top:7px;}
+  .time-chip{border:1px solid var(--gold-line);background:#fff;color:#8a611c;border-radius:999px;padding:6px 11px;font-size:12px;cursor:pointer;font-family:inherit;}
+  .time-chip:hover{background:var(--gold-soft);}
+  .custom-btn{width:100%;margin-top:4px;background:var(--bg-alt);color:var(--muted);border:1px dashed var(--line);border-radius:10px;padding:9px 12px;font-size:12.5px;cursor:pointer;font-family:inherit;}
+  .custom-btn:hover{border-color:var(--gold);color:var(--ink);}
+  .empty-state{border:1px dashed var(--line);border-radius:10px;padding:13px;font-size:12.5px;color:var(--muted);background:var(--bg);}
+
+  /* Timeline */
+  .timeline-scroll{max-height:420px;overflow-y:auto;padding-right:4px;}
+  .timeline-inner{display:grid;grid-template-columns:40px 1fr;gap:8px;min-height:720px;}
+  .timeline-hours{display:grid;grid-template-rows:repeat(24,30px);align-content:start;}
+  .timeline-hour{height:30px;font-size:10px;color:var(--muted);display:flex;align-items:flex-start;justify-content:flex-end;padding-right:2px;transform:translateY(-6px);}
+  .timeline-track{position:relative;height:720px;border:1px solid var(--line);border-radius:12px;background:var(--bg);overflow:hidden;}
+  .timeline-line{position:absolute;left:0;right:0;border-top:1px solid rgba(0,0,0,0.045);}
+  .timeline-seg{position:absolute;left:6px;right:6px;border-radius:8px;padding:5px 8px;font-size:11px;line-height:1.25;overflow:hidden;border:1px solid transparent;display:flex;flex-direction:column;gap:2px;text-align:left;}
+  .timeline-seg span{pointer-events:none;}
+  .seg-free{background:var(--gold-soft);border-color:var(--gold-line);color:#8a611c;cursor:pointer;}
+  .seg-free:hover{filter:brightness(0.97);}
+  .seg-a{background:var(--blue-soft);border-color:var(--blue-line);color:var(--blue);}
+  .seg-b{background:var(--rose-soft);border-color:var(--rose-line);color:var(--rose);}
+  .seg-both{background:#efe4e9;border-color:#d8bfc8;color:#6b4a56;}
+  .seg-plan{background:var(--sage-soft);border-color:var(--sage-line);color:#3f5f49;}
+  .seg-past{background:#f4f0ed;border-color:#e8e0db;color:#c3b7b9;}
+  .seg-time{font-weight:600;font-size:11px;}
+  .seg-note{font-size:10px;opacity:.9;}
+
+  /* Plans list */
+  .plan-row{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:9px 0;border-bottom:1px solid var(--line);}
+  .plan-row:last-child{border-bottom:none;}
+  .plan-info{font-size:13px;}
+  .plan-title{font-weight:500;}
+  .plan-when{font-size:11.5px;color:var(--muted);margin-top:1px;}
+  .plan-note{font-size:11.5px;color:var(--muted);margin-top:2px;}
+  .plan-actions{display:flex;gap:6px;flex-shrink:0;}
+  .btn-mini{border-radius:7px;padding:4px 9px;font-size:11.5px;cursor:pointer;border:1px solid transparent;font-family:inherit;}
+  .btn-mini.confirm{background:var(--sage-soft);color:#3f5f49;border-color:var(--sage-line);}
+  .btn-mini.reject{background:var(--danger-soft);color:var(--danger);border-color:#e3b7b7;}
+  .btn-mini.edit{background:var(--blue-soft);color:var(--blue);border-color:var(--blue-line);}
+  .pill{font-size:9.5px;padding:1px 6px;border-radius:999px;margin-left:6px;}
+  .pill-pending{background:var(--gold-soft);color:#8a611c;}
+  .pill-confirmed{background:var(--sage-soft);color:#3f5f49;}
+
+  /* Settings */
+  .settings-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;}
+  .field label{font-size:11.5px;color:var(--muted);display:block;margin-bottom:4px;}
+  .field input,.field select{width:100%;border:1px solid var(--line);border-radius:8px;padding:8px 10px;font-size:13px;outline:none;background:var(--bg);font-family:inherit;}
+  .field input:focus,.field select:focus{border-color:var(--gold);}
+  .save-btn{background:var(--ink);color:#fff;border:none;border-radius:8px;padding:8px 16px;font-size:13px;cursor:pointer;font-family:inherit;}
+  .save-btn:hover{background:#4a3a52;}
+  .save-status{font-size:11.5px;margin-top:6px;}
+  .save-status.ok{color:var(--sage);}
+  .save-status.err{color:var(--danger);}
+  .busy-row{display:flex;align-items:center;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--line);font-size:12.5px;}
+  .busy-row:last-child{border-bottom:none;}
+
+  /* Ideas */
+  .idea-card{border:1px solid var(--line);border-radius:10px;padding:10px 12px;background:var(--bg);display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:8px;}
+  .idea-card.done{opacity:.5;}
+  .idea-title{font-size:13px;font-weight:500;}
+  .idea-title.done{text-decoration:line-through;}
+  .idea-meta{font-size:11px;color:var(--muted);margin-top:2px;}
+  .idea-cat{display:inline-block;background:var(--rose-soft);color:var(--rose);border-radius:999px;padding:1px 8px;font-size:10px;margin-right:6px;}
+
+  .tabs{display:flex;gap:6px;margin-bottom:1.2rem;}
+  .tab-btn{padding:7px 14px;border-radius:999px;border:1px solid var(--line);background:var(--bg-alt);font-size:12.5px;color:var(--muted);cursor:pointer;font-family:inherit;}
+  .tab-btn.active{background:var(--ink);color:#fff;border-color:var(--ink);}
+
+  /* Modal */
+  .modal-bg{position:fixed;inset:0;background:rgba(43,33,48,0.45);display:flex;align-items:center;justify-content:center;z-index:100;padding:1rem;}
+  .modal{background:var(--bg-alt);border-radius:14px;padding:1.5rem;width:100%;max-width:360px;max-height:90vh;overflow-y:auto;}
+  .modal h3{font-size:18px;font-weight:500;font-style:italic;font-family:'Newsreader',serif;margin-bottom:4px;}
+  .modal p{font-size:12.5px;color:var(--muted);margin-bottom:1rem;}
+  .modal input[type=text],.modal input[type=date],.modal input[type=time],.modal textarea,.modal select{width:100%;border:1px solid var(--line);border-radius:8px;padding:10px 12px;font-size:15px;margin-bottom:12px;outline:none;display:block;font:inherit;background:var(--bg);}
+  .modal textarea{min-height:70px;resize:vertical;}
+  .modal input:focus,.modal textarea:focus,.modal select:focus{border-color:var(--gold);}
+  .modal-times{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+  .modal-times label{font-size:11.5px;color:var(--muted);}
+  .modal-btns{display:flex;gap:8px;justify-content:flex-end;margin-top:4px;}
+  .btn-primary{background:var(--ink);color:#fff;border:none;border-radius:8px;padding:9px 18px;font-size:14px;cursor:pointer;font-family:inherit;}
+  .btn-secondary{background:none;color:var(--muted);border:1px solid var(--line);border-radius:8px;padding:9px 18px;font-size:14px;cursor:pointer;font-family:inherit;}
+  .btn-danger-text{background:none;color:var(--danger);border:none;font-size:12px;cursor:pointer;text-decoration:underline;margin-top:2px;font-family:inherit;}
+
+  @media (max-width:520px){
+    .planner{grid-template-columns:1fr;}
+    .stats{grid-template-columns:1fr 1fr;}
+    .settings-grid{grid-template-columns:1fr;}
+    .modal-times{grid-template-columns:1fr;gap:0;}
+    .day-btn{min-height:48px;}
+  }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <div id="gate">
+    <div class="disp">Наши окна</div>
+    <p>Пароль, чтобы открыть общий график</p>
+    <input id="gate-inp" type="password" placeholder="Пароль">
+    <div id="gate-err">Неверный пароль</div>
+    <button id="gate-btn">Войти</button>
+    <div style="display:flex;align-items:center;gap:10px;margin:16px 0;color:var(--muted);font-size:11.5px;">
+      <div style="flex:1;height:1px;background:var(--line)"></div>или<div style="flex:1;height:1px;background:var(--line)"></div>
+    </div>
+    <button id="google-btn" onclick="loginGoogle()" style="width:100%;background:var(--bg-alt);color:var(--ink);border:1px solid var(--line);border-radius:10px;padding:11px;font-size:14px;cursor:pointer;font-family:inherit;display:flex;align-items:center;justify-content:center;gap:8px;">
+      <svg width="16" height="16" viewBox="0 0 48 48"><path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3c-1.6 4.7-6.1 8-11.3 8-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.8 1.1 8 3l6-6C34.6 5.1 29.6 3 24 3 12.4 3 3 12.4 3 24s9.4 21 21 21 21-9.4 21-21c0-1.4-.1-2.8-.4-4.5z"/><path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.5 16 18.9 13 24 13c3.1 0 5.8 1.1 8 3l6-6C34.6 5.1 29.6 3 24 3 16 3 9.1 7.6 6.3 14.7z"/><path fill="#4CAF50" d="M24 45c5.5 0 10.4-1.9 14.3-5.1l-6.6-5.6C29.6 36 26.9 37 24 37c-5.2 0-9.6-3.3-11.3-8l-6.5 5C9.1 40.4 16 45 24 45z"/><path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.3-2.2 4.3-4.1 5.7l6.6 5.6C41.5 36.3 45 30.8 45 24c0-1.4-.1-2.8-.4-4.5z"/></svg>
+      Войти через Google
+    </button>
+    <div style="font-size:11px;color:var(--muted);margin-top:8px;">быстрый вход для Вовы — привязан к его аккаунту</div>
+  </div>
+
+  <div id="root" style="display:none"><div class="loader">секунду...</div></div>
+
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
+<script>
+
+// ============================================================
+// CONFIG
+// ============================================================
+// Отдельная учётная запись для дуо-планировщика (не пересекается с гостевым
+// входом основного сайта). Создать пользователя и пароль нужно один раз
+// в Firebase Console -> Authentication -> Add user. Пароль знаете только вы двое.
+var DUO_EMAIL = 'love@us.xyz';
+// Тот же Google-аккаунт, что уже привязан как админ на основном сайте (fox-aoi) —
+// используем его как быстрый вход для Вовы на дуо-планировщике.
+var VOVA_UID = '4tQbxe4uHbeZ11apRGhBdl9UzSt2';
+
+var MIN_WINDOW_MIN = 30;      // минимальная длительность окна, чтобы его показывать
+var SUGGESTION_STEP_MIN = 30; // шаг быстрых предложений внутри окна
+var DEFAULT_DURATION_MIN = 90;
+var TIMELINE_HEIGHT_PX = 720;
+var RIBBON_DAYS = 14;
+
+// ============================================================
+// Firebase (тот же проект fox-aoi, отдельные узлы в базе: duo/*)
+// ============================================================
+firebase.initializeApp({
+  apiKey: "AIzaSyBW2POEuUCjjCGjcGUAq8MUM-Z4UAjxQWE",
+  authDomain: "fox-aoi.firebaseapp.com",
+  databaseURL: "https://fox-aoi-default-rtdb.firebaseio.com",
+  projectId: "fox-aoi",
+  storageBucket: "fox-aoi.firebasestorage.app",
+  messagingSenderId: "51905315811",
+  appId: "1:51905315811:web:c42d3c542b39646a8b96d6"
+});
+var auth = firebase.auth();
+var db = firebase.database();
+
+// ============================================================
+// State
+// ============================================================
+var DAYS = ['Пн','Вт','Ср','Чт','Пт','Сб','Вс'];
+var MONTHS = ['янв','фев','мар','апр','май','июн','июл','авг','сен','окт','ноя','дек'];
+
+var monthOffset = 0;
+var selectedDate = null;
+var currentUser = null;
+var fbStarted = false;
+var tab = 'calendar'; // 'calendar' | 'ideas'
+
+var duoConfig = { names: { a: 'Вова', b: 'Диана' }, shiftRef: { a: '', b: '' } };
+var busyData  = { a: {}, b: {} };   // busyData.a['2026-07-12'] = { key: {start,end,label} }
+var plans     = {};                 // plans[id] = {date,startTime,endTime,title,notes,proposedBy,status,ts}
+var ideas     = {};                 // ideas[id] = {title,category,cost,done,ts}
+
+var whoAmI = localStorage.getItem('duo_who') || 'a';
+
+var planModal = null;     // {dateStr, startTime, endTime}
+var editPlanModal = null; // {id, ...}
+var busyModal = null;     // {person, dateStr}
+var settingsOpen = false;
+var ideaModal = false;
+
+var saveStatus = '';
+var saveStatusType = '';
+
+// ============================================================
+// Gate
+// ============================================================
+document.getElementById('gate-btn').addEventListener('click', checkGate);
+document.getElementById('gate-inp').addEventListener('keydown', function(e){
+  if (e.key === 'Enter') checkGate();
+});
+
+function loginGoogle() {
+  var btn = document.getElementById('google-btn');
+  if (btn) btn.disabled = true;
+  auth.signInWithPopup(new firebase.auth.GoogleAuthProvider())
+    .then(function(result){
+      // если через Google вошёл именно Вова — сразу подставляем его как "кто ты"
+      if (result.user && result.user.uid === VOVA_UID) { setWho('a'); }
+      openApp();
+    })
+    .catch(function(e){
+      if (btn) btn.disabled = false;
+      if (e.code !== 'auth/popup-closed-by-user') alert('Ошибка входа через Google: ' + e.message);
+    });
+}
+
+function checkGate() {
+  var password = document.getElementById('gate-inp').value;
+  var btn = document.getElementById('gate-btn');
+  btn.disabled = true;
+  btn.textContent = '...';
+  document.getElementById('gate-err').style.display = 'none';
+  document.getElementById('gate-inp').style.borderColor = '';
+
+  firebase.auth().signInWithEmailAndPassword(DUO_EMAIL, password)
+    .then(function(){
+      openApp();
+    })
+    .catch(function(){
+      document.getElementById('gate-err').style.display = 'block';
+      document.getElementById('gate-inp').style.borderColor = '#b33f3f';
+      btn.disabled = false;
+      btn.textContent = 'Войти';
+    });
+}
+
+function openApp() {
+  document.getElementById('gate').style.display = 'none';
+  document.getElementById('root').style.display = 'block';
+  if (!fbStarted) {
+    fbStarted = true;
+    db.ref('duo/config').on('value', function(snap){
+      var v = snap.val();
+      if (v) {
+        duoConfig.names = v.names || duoConfig.names;
+        duoConfig.shiftRef = v.shiftRef || duoConfig.shiftRef;
+      }
+      render();
+    });
+    db.ref('duo/busy').on('value', function(snap){ busyData = snap.val() || { a:{}, b:{} }; if(!busyData.a) busyData.a={}; if(!busyData.b) busyData.b={}; render(); });
+    db.ref('duo/plans').on('value', function(snap){ plans = snap.val() || {}; render(); });
+    db.ref('duo/ideas').on('value', function(snap){ ideas = snap.val() || {}; render(); });
+  }
+}
+
+// Держим сессию залогиненной постоянно (LOCAL-персистентность — это дефолт Firebase,
+// но выставляем явно), и доверяем именно onAuthStateChanged, а не sessionStorage,
+// чтобы вход не сбрасывался при закрытии вкладки/браузера или перезагрузке страницы.
+firebase.auth().setPersistence(firebase.auth.Auth.Persistence.LOCAL)
+  .catch(function(){ /* если IndexedDB недоступна (приватный режим и т.п.) — останется персистентность по умолчанию */ })
+  .then(function(){
+    auth.onAuthStateChanged(function(user){
+      currentUser = user;
+      if (user) {
+        openApp();
+      } else {
+        document.getElementById('root').style.display = 'none';
+        document.getElementById('gate').style.display = 'block';
+      }
+      render();
+    });
+  });
+
+// ============================================================
+// Generic helpers
+// ============================================================
+function pad(n){ return n < 10 ? '0'+n : ''+n; }
+function dateKey(d){ return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate()); }
+function addDays(dateStr, amount){ var d = new Date(dateStr+'T00:00:00'); d.setDate(d.getDate()+amount); return dateKey(d); }
+function parseTimeToMinutes(value){
+  if (!value || !/^\d{2}:\d{2}$/.test(value)) return null;
+  var parts = value.split(':');
+  var h = parseInt(parts[0],10), m = parseInt(parts[1],10);
+  if (h<0||h>23||m<0||m>59) return null;
+  return h*60+m;
+}
+function formatMinutes(minutes){
+  if (minutes >= 1440) return '24:00';
+  var h = Math.floor(minutes/60), m = minutes%60;
+  return pad(h)+':'+pad(m);
+}
+function roundUpMinutes(minutes, step){ return Math.ceil(minutes/step)*step; }
+function getNowMinutes(){ var now = new Date(); return now.getHours()*60+now.getMinutes(); }
+function isPastDate(dateStr){ return dateStr < dateKey(new Date()); }
+function isTodayKey(dateStr){ return dateStr === dateKey(new Date()); }
+function escapeHtml(value){
+  return String(value||'').replace(/[&<>"']/g, function(ch){
+    return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[ch];
+  });
+}
+function otherPerson(p){ return p === 'a' ? 'b' : 'a'; }
+function personName(p){ return (duoConfig.names && duoConfig.names[p]) || (p === 'a' ? 'Партнёр A' : 'Партнёр B'); }
+
+// ============================================================
+// Shift schedule (2/2, ночная смена 23:00-11:00) — по каждому человеку своя дата отсчёта
+// ============================================================
+function isWorkDayFor(person, dateStr){
+  var ref = duoConfig.shiftRef && duoConfig.shiftRef[person];
+  if (!ref) return false;
+  var refD = new Date(ref+'T00:00:00');
+  var d = new Date(dateStr+'T00:00:00');
+  var diff = Math.round((d-refD)/86400000);
+  var pos = ((diff % 4) + 4) % 4;
+  return pos < 2; // 0,1 = смена; 2,3 = выходной
+}
+function getWorkIntervals(person, dateStr){
+  var out = [];
+  if (isWorkDayFor(person, addDays(dateStr,-1))) out.push({start:0, end:11*60, owner:person, kind:'work'});
+  if (isWorkDayFor(person, dateStr)) out.push({start:23*60, end:24*60, owner:person, kind:'work'});
+  return out;
+}
+function getBusyIntervals(person, dateStr){
+  var out = [];
+  var dayData = (busyData[person] && busyData[person][dateStr]) || {};
+  Object.keys(dayData).forEach(function(key){
+    var b = dayData[key];
+    var s = parseTimeToMinutes(b.start), e = parseTimeToMinutes(b.end);
+    if (s===null || e===null) return;
+    if (e <= s) e = 1440;
+    out.push({start:s, end:e, owner:person, kind:'busy', label:b.label||'', id:key});
+  });
+  return out;
+}
+function getPlansForDate(dateStr, includePending){
+  return Object.keys(plans).map(function(id){ return {id:id, data:plans[id]}; })
+    .filter(function(entry){
+      if (!entry.data || entry.data.date !== dateStr) return false;
+      if (includePending) return entry.data.status === 'pending' || entry.data.status === 'confirmed';
+      return entry.data.status === 'confirmed';
+    })
+    .sort(function(a,b){ return (parseTimeToMinutes(a.data.startTime)||0) - (parseTimeToMinutes(b.data.startTime)||0); });
+}
+function getPlanIntervals(dateStr){
+  return getPlansForDate(dateStr, true).map(function(entry){
+    var s = parseTimeToMinutes(entry.data.startTime), e = parseTimeToMinutes(entry.data.endTime);
+    if (s===null) return null;
+    if (e===null || e<=s) e = Math.min(s+DEFAULT_DURATION_MIN, 1440);
+    return {start:s, end:e, owner:'plan', kind: entry.data.status === 'confirmed' ? 'plan-confirmed' : 'plan-pending', label: entry.data.title||'', id: entry.id};
+  }).filter(Boolean);
+}
+function getAllSources(dateStr){
+  var out = [];
+  out = out.concat(getWorkIntervals('a', dateStr), getWorkIntervals('b', dateStr));
+  out = out.concat(getBusyIntervals('a', dateStr), getBusyIntervals('b', dateStr));
+  out = out.concat(getPlanIntervals(dateStr));
+  if (isTodayKey(dateStr)) {
+    out.push({start:0, end:Math.min(roundUpMinutes(getNowMinutes(),5),1440), owner:'past', kind:'past'});
+  }
+  return out.filter(function(s){ return s.start!==null && s.end!==null && s.end>s.start; });
+}
+// Развёртка дня на непересекающиеся сегменты с классификацией занятости
+function getDaySegments(dateStr){
+  var sources = getAllSources(dateStr);
+  var boundaries = [0,1440];
+  sources.forEach(function(s){ boundaries.push(s.start, s.end); });
+  boundaries = boundaries.filter(function(v,i,arr){ return v>=0 && v<=1440 && arr.indexOf(v)===i; }).sort(function(a,b){return a-b;});
+
+  var segments = [];
+  for (var i=0;i<boundaries.length-1;i++){
+    var start = boundaries[i], end = boundaries[i+1];
+    if (end<=start) continue;
+    var mid = start + (end-start)/2;
+    var active = sources.filter(function(s){ return mid>=s.start && mid<s.end; });
+
+    var type, label;
+    var plan = active.filter(function(s){ return s.kind==='plan-confirmed' || s.kind==='plan-pending'; })[0];
+    var past = active.some(function(s){ return s.kind==='past'; });
+    var hasA = active.some(function(s){ return s.owner==='a'; });
+    var hasB = active.some(function(s){ return s.owner==='b'; });
+
+    if (plan) { type = plan.kind; label = plan.label; }
+    else if (past) { type = 'past'; label = 'прошло'; }
+    else if (hasA && hasB) { type = 'both'; label = personName('a')+' и '+personName('b')+' заняты'; }
+    else if (hasA) { type = 'a'; label = personName('a')+' занят(а)'; }
+    else if (hasB) { type = 'b'; label = personName('b')+' занят(а)'; }
+    else { type = 'free'; label = 'оба свободны'; }
+
+    var prev = segments[segments.length-1];
+    if (prev && prev.type===type && prev.label===label) { prev.end = end; }
+    else { segments.push({start:start, end:end, type:type, label:label}); }
+  }
+  return segments;
+}
+function getFreeTogetherIntervals(dateStr){
+  if (isPastDate(dateStr)) return [];
+  return getDaySegments(dateStr)
+    .filter(function(s){ return s.type==='free'; })
+    .map(function(s){ return [s.start, s.end]; })
+    .filter(function(iv){ return iv[1]-iv[0] >= MIN_WINDOW_MIN; });
+}
+function hasFreeTogether(dateStr){ return getFreeTogetherIntervals(dateStr).length>0; }
+function getDayStatus(dateStr){
+  if (isPastDate(dateStr)) return 'past';
+  var confirmed = getPlansForDate(dateStr,false).length>0;
+  if (confirmed) return 'plan';
+  if (hasFreeTogether(dateStr)) return 'free';
+  return 'busy';
+}
+function isRangeFree(dateStr, startMin, endMin){
+  if (isPastDate(dateStr)) return false;
+  if (startMin===null || endMin===null || endMin<=startMin) return false;
+  return !getDaySegments(dateStr).some(function(s){
+    if (s.type==='free') return false;
+    return startMin < s.end && endMin > s.start;
+  });
+}
+function formatLongDate(dateStr){
+  var d = new Date(dateStr+'T00:00:00');
+  var names = ['воскресенье','понедельник','вторник','среда','четверг','пятница','суббота'];
+  return names[d.getDay()]+', '+d.getDate()+' '+MONTHS[d.getMonth()];
+}
+function findNextFreeDate(daysAhead){
+  var start = new Date(); start.setHours(0,0,0,0);
+  for (var i=0;i<daysAhead;i++){
+    var d = new Date(start); d.setDate(start.getDate()+i);
+    var key = dateKey(d);
+    if (hasFreeTogether(key)) return key;
+  }
+  return dateKey(start);
+}
+function ensureSelectedDate(){
+  if (selectedDate && !isPastDate(selectedDate)) return;
+  selectedDate = findNextFreeDate(60);
+}
+
+// ============================================================
+// Countdown stats
+// ============================================================
+function getNextConfirmed(){
+  var today = dateKey(new Date());
+  var list = Object.keys(plans).map(function(id){ return {id:id, data:plans[id]}; })
+    .filter(function(e){ return e.data.status==='confirmed' && e.data.date >= today; })
+    .sort(function(a,b){ return a.data.date > b.data.date ? 1 : -1; });
+  return list[0] || null;
+}
+function getLastConfirmed(){
+  var today = dateKey(new Date());
+  var list = Object.keys(plans).map(function(id){ return {id:id, data:plans[id]}; })
+    .filter(function(e){ return e.data.status==='confirmed' && e.data.date < today; })
+    .sort(function(a,b){ return a.data.date < b.data.date ? 1 : -1; });
+  return list[0] || null;
+}
+function daysBetween(a,b){
+  return Math.round((new Date(b+'T00:00:00') - new Date(a+'T00:00:00'))/86400000);
+}
+
+// ============================================================
+// Actions: who am I
+// ============================================================
+function setWho(p){ whoAmI = p; localStorage.setItem('duo_who', p); render(); }
+
+// ============================================================
+// Actions: plans
+// ============================================================
+function selectDate(dateStr){ if (isPastDate(dateStr)) return; selectedDate = dateStr; render(); }
+function changeMonth(delta){ monthOffset = Math.max(0, monthOffset+delta); render(); }
+
+function openPlanModal(dateStr, startTime, endTime){
+  planModal = { dateStr: dateStr, startTime: startTime||'', endTime: endTime||'', title:'', notes:'' };
+  render();
+  setTimeout(function(){ var el = document.getElementById('plan-title-inp'); if (el) el.focus(); }, 50);
+}
+function closePlanModal(){ planModal = null; render(); }
+function openCustomPlan(dateStr){
+  var free = getFreeTogetherIntervals(dateStr);
+  if (!free.length) return;
+  var start = roundUpMinutes(free[0][0],5);
+  var end = Math.min(free[0][1], start+DEFAULT_DURATION_MIN);
+  openPlanModal(dateStr, formatMinutes(start), formatMinutes(end));
+}
+function submitPlan(){
+  var startInp = document.getElementById('plan-start-inp');
+  var endInp = document.getElementById('plan-end-inp');
+  var titleInp = document.getElementById('plan-title-inp');
+  var notesInp = document.getElementById('plan-notes-inp');
+  var startMin = parseTimeToMinutes(startInp.value);
+  var endMin = parseTimeToMinutes(endInp.value);
+  var title = titleInp.value.trim();
+
+  [startInp,endInp,titleInp].forEach(function(el){ el.style.borderColor=''; });
+
+  if (startMin===null){ startInp.style.borderColor='#b33f3f'; return; }
+  if (endMin===null){ endInp.style.borderColor='#b33f3f'; return; }
+  if (endMin<=startMin){ endInp.style.borderColor='#b33f3f'; alert('Время окончания должно быть позже начала.'); return; }
+  if (!title){ titleInp.style.borderColor='#b33f3f'; return; }
+  if (!isRangeFree(planModal.dateStr, startMin, endMin)){
+    startInp.style.borderColor='#b33f3f'; endInp.style.borderColor='#b33f3f';
+    alert('В это время кто-то из вас занят. Выберите другой интервал.');
+    return;
+  }
+
+  var btn = document.querySelector('.btn-primary');
+  if (btn){ btn.disabled = true; btn.textContent = '...'; }
+
+  db.ref('duo/plans').push({
+    date: planModal.dateStr,
+    startTime: formatMinutes(startMin),
+    endTime: formatMinutes(endMin),
+    title: title,
+    notes: notesInp.value.trim(),
+    proposedBy: whoAmI,
+    status: 'pending',
+    ts: Date.now()
+  }).then(function(){ planModal = null; render(); })
+    .catch(function(err){ if(btn){btn.disabled=false;btn.textContent='Предложить';} alert('Не удалось сохранить: '+err.message); });
+}
+function confirmPlan(id){ db.ref('duo/plans/'+id+'/status').set('confirmed'); }
+function unconfirmPlan(id){ db.ref('duo/plans/'+id+'/status').set('pending'); }
+function deletePlan(id){ if (confirm('Удалить это свидание?')) db.ref('duo/plans/'+id).remove(); }
+function openEditPlan(id){
+  var p = plans[id]; if (!p) return;
+  editPlanModal = { id:id, date:p.date, startTime:p.startTime, endTime:p.endTime, title:p.title||'', notes:p.notes||'', status:p.status||'pending' };
+  render();
+}
+function closeEditPlan(){ editPlanModal = null; render(); }
+function saveEditPlan(){
+  var d = document.getElementById('edit-date-inp').value;
+  var s = document.getElementById('edit-start-inp').value;
+  var e = document.getElementById('edit-end-inp').value;
+  var t = document.getElementById('edit-title-inp').value.trim();
+  var n = document.getElementById('edit-notes-inp').value.trim();
+  var st = document.getElementById('edit-status-inp').value;
+  if (!d || !t){ alert('Заполните дату и название.'); return; }
+  db.ref('duo/plans/'+editPlanModal.id).update({ date:d, startTime:s, endTime:e, title:t, notes:n, status:st })
+    .then(function(){ editPlanModal = null; render(); });
+}
+
+// ============================================================
+// Actions: manual busy blocks
+// ============================================================
+function openBusyModal(person, dateStr){ busyModal = { person: person, dateStr: dateStr, start:'', end:'', label:'' }; render(); }
+function closeBusyModal(){ busyModal = null; render(); }
+function submitBusy(){
+  var s = document.getElementById('busy-start-inp').value;
+  var e = document.getElementById('busy-end-inp').value;
+  var l = document.getElementById('busy-label-inp').value.trim();
+  if (!s || !e){ alert('Укажите начало и конец.'); return; }
+  db.ref('duo/busy/'+busyModal.person+'/'+busyModal.dateStr).push({ start:s, end:e, label:l })
+    .then(function(){ busyModal = null; render(); });
+}
+function removeBusy(person, dateStr, key){
+  db.ref('duo/busy/'+person+'/'+dateStr+'/'+key).remove();
+}
+
+// ============================================================
+// Actions: settings
+// ============================================================
+function toggleSettings(){ settingsOpen = !settingsOpen; render(); }
+function saveSettings(){
+  var nameA = document.getElementById('set-name-a').value.trim() || 'Партнёр A';
+  var nameB = document.getElementById('set-name-b').value.trim() || 'Партнёр B';
+  var refA = document.getElementById('set-ref-a').value;
+  var refB = document.getElementById('set-ref-b').value;
+  db.ref('duo/config').set({ names:{a:nameA,b:nameB}, shiftRef:{a:refA,b:refB} })
+    .then(function(){ saveStatus = 'Сохранено'; saveStatusType = 'ok'; render(); })
+    .catch(function(err){ saveStatus = 'Ошибка: '+err.message; saveStatusType='err'; render(); });
+}
+
+// ============================================================
+// Actions: ideas
+// ============================================================
+function openIdeaModal(){ ideaModal = true; render(); }
+function closeIdeaModal(){ ideaModal = false; render(); }
+function submitIdea(){
+  var t = document.getElementById('idea-title-inp').value.trim();
+  var c = document.getElementById('idea-cat-inp').value;
+  var cost = document.getElementById('idea-cost-inp').value;
+  if (!t){ alert('Напишите идею.'); return; }
+  db.ref('duo/ideas').push({ title:t, category:c, cost:cost, done:false, ts:Date.now() })
+    .then(function(){ ideaModal = false; render(); });
+}
+function toggleIdea(id){ db.ref('duo/ideas/'+id+'/done').set(!ideas[id].done); }
+function deleteIdea(id){ if (confirm('Удалить идею?')) db.ref('duo/ideas/'+id).remove(); }
+function setTab(t){ tab = t; render(); }
+function logout(){ auth.signOut(); }
+
+// ============================================================
+// Signature: rhythm ribbon (следующие 14 дней, две ленты смен + золотые окна)
+// ============================================================
+function renderRibbon(){
+  var days = [];
+  var start = new Date(); start.setHours(0,0,0,0);
+  for (var i=0;i<RIBBON_DAYS;i++){ var d = new Date(start); d.setDate(start.getDate()+i); days.push(dateKey(d)); }
+
+  var colW = 44, gap = 4, padTop = 4;
+  var rowH = 16, rowGap = 3;
+  var w = days.length*(colW+gap)-gap;
+  var h = rowH*2 + rowGap + padTop*2 + 14;
+
+  var svg = '<svg viewBox="0 0 '+w+' '+h+'" width="100%" style="display:block;overflow:visible" xmlns="http://www.w3.org/2000/svg">';
+
+  days.forEach(function(dateStr, idx){
+    var x = idx*(colW+gap);
+    var workA = isWorkDayFor('a', dateStr);
+    var workB = isWorkDayFor('b', dateStr);
+    var free = hasFreeTogether(dateStr);
+    var hasPlan = getPlansForDate(dateStr,false).length>0;
+
+    // row A
+    svg += '<rect x="'+x+'" y="'+padTop+'" width="'+colW+'" height="'+rowH+'" rx="4" fill="'+(workA?'#4c6b8a':'#e4ecf3')+'" opacity="'+(workA?1:0.55)+'"></rect>';
+    // row B
+    var yB = padTop+rowH+rowGap;
+    svg += '<rect x="'+x+'" y="'+yB+'" width="'+colW+'" height="'+rowH+'" rx="4" fill="'+(workB?'#b5566b':'#f6e4e9')+'" opacity="'+(workB?1:0.55)+'"></rect>';
+
+    // overlap marker (free together) under both rows
+    if (free && !isPastDate(dateStr)){
+      svg += '<rect x="'+x+'" y="'+padTop+'" width="'+colW+'" height="'+(rowH*2+rowGap)+'" rx="5" fill="none" stroke="#c08a2e" stroke-width="2"></rect>';
+    }
+    if (hasPlan){
+      svg += '<circle cx="'+(x+colW-7)+'" cy="'+(padTop+rowH*2+rowGap-7)+'" r="4" fill="#5b8266"></circle>';
+    }
+
+    var d = new Date(dateStr+'T00:00:00');
+    var lbl = pad(d.getDate())+'.'+pad(d.getMonth()+1);
+    var isToday = isTodayKey(dateStr);
+    svg += '<text x="'+(x+colW/2)+'" y="'+(h-3)+'" font-size="9" text-anchor="middle" fill="'+(isToday?'#c08a2e':'#8a7b85')+'" font-family="Inter, sans-serif" font-weight="'+(isToday?'700':'400')+'">'+lbl+'</text>';
+  });
+
+  svg += '</svg>';
+  return svg;
+}
+
+// ============================================================
+// Render
+// ============================================================
+function render(){
+  var root = document.getElementById('root');
+  if (!root || root.style.display==='none') return;
+  ensureSelectedDate();
+
+  var monthBase = new Date();
+  monthBase = new Date(monthBase.getFullYear(), monthBase.getMonth()+monthOffset, 1);
+  var monthStart = new Date(monthBase.getFullYear(), monthBase.getMonth(), 1);
+  var gridStart = new Date(monthStart);
+  var startDow = gridStart.getDay();
+  var startDiff = startDow===0 ? -6 : 1-startDow;
+  gridStart.setDate(gridStart.getDate()+startDiff);
+
+  var calendarDays = [];
+  for (var i=0;i<42;i++){ var cd = new Date(gridStart); cd.setDate(gridStart.getDate()+i); calendarDays.push(cd); }
+
+  var monthLabel = MONTHS[monthStart.getMonth()]+' '+monthStart.getFullYear();
+  var selectedFree = getFreeTogetherIntervals(selectedDate);
+  var segments = getDaySegments(selectedDate);
+  var selectedDateObj = new Date(selectedDate+'T00:00:00');
+  var dayPlans = getPlansForDate(selectedDate, true);
+
+  var nextConfirmed = getNextConfirmed();
+  var lastConfirmed = getLastConfirmed();
+  var today = dateKey(new Date());
+
+  var html = '';
+
+  // Header
+  html += '<div class="top"><div>'+
+    '<div class="disp">Наши окна</div>'+
+    '<p>Общий график для двоих со смещёнными сменами 2/2. Золотая рамка = оба свободны.</p>'+
+    '</div>';
+  html += '<div class="top-actions">';
+  html += '<button class="chip-btn '+(whoAmI==='a'?'who-a':'')+'" onclick="setWho(\'a\')">'+escapeHtml(personName('a'))+'</button>';
+  html += '<button class="chip-btn '+(whoAmI==='b'?'who-b':'')+'" onclick="setWho(\'b\')">'+escapeHtml(personName('b'))+'</button>';
+  html += '<button class="chip-btn" onclick="toggleSettings()">⚙ Настройки</button>';
+  html += '<button class="chip-btn" onclick="logout()">Выйти</button>';
+  html += '</div></div>';
+
+  // Settings panel
+  if (settingsOpen){
+    html += '<div class="panel" style="margin-bottom:1.4rem">';
+    html += '<h3>Настройки графика</h3>';
+    html += '<div class="panel-sub">Укажите дату начала первой рабочей смены (2/2, ночная 23:00–11:00) для каждого — так система посчитает, когда вы оба свободны.</div>';
+    html += '<div class="settings-grid">';
+    html += '<div class="field"><label>Имя — партнёр A</label><input id="set-name-a" type="text" value="'+escapeHtml(duoConfig.names.a)+'"></div>';
+    html += '<div class="field"><label>Имя — партнёр B</label><input id="set-name-b" type="text" value="'+escapeHtml(duoConfig.names.b)+'"></div>';
+    html += '<div class="field"><label>Первый рабочий день — '+escapeHtml(duoConfig.names.a)+'</label><input id="set-ref-a" type="date" value="'+escapeHtml(duoConfig.shiftRef.a||'')+'"></div>';
+    html += '<div class="field"><label>Первый рабочий день — '+escapeHtml(duoConfig.names.b)+'</label><input id="set-ref-b" type="date" value="'+escapeHtml(duoConfig.shiftRef.b||'')+'"></div>';
+    html += '</div>';
+    html += '<button class="save-btn" onclick="saveSettings()">Сохранить</button>';
+    if (saveStatus) html += '<div class="save-status '+saveStatusType+'">'+escapeHtml(saveStatus)+'</div>';
+
+    // manual busy blocks for selected date
+    html += '<div style="margin-top:16px;border-top:1px solid var(--line);padding-top:12px">';
+    html += '<div class="section-title">Личные занятости на '+escapeHtml(formatLongDate(selectedDate))+'</div>';
+    ['a','b'].forEach(function(p){
+      var dayData = (busyData[p] && busyData[p][selectedDate]) || {};
+      html += '<div style="margin-bottom:8px"><div style="font-size:12.5px;font-weight:500;margin-bottom:4px">'+escapeHtml(personName(p))+'</div>';
+      var keys = Object.keys(dayData);
+      if (keys.length){
+        keys.forEach(function(k){
+          var b = dayData[k];
+          html += '<div class="busy-row"><span>'+escapeHtml(b.start)+'–'+escapeHtml(b.end)+(b.label?' · '+escapeHtml(b.label):'')+'</span>'+
+            '<button class="btn-danger-text" onclick="removeBusy(\''+p+'\',\''+selectedDate+'\',\''+k+'\')">убрать</button></div>';
+        });
+      } else {
+        html += '<div style="font-size:12px;color:var(--muted)">ничего не добавлено</div>';
+      }
+      html += '<button class="custom-btn" style="margin-top:6px" onclick="openBusyModal(\''+p+'\',\''+selectedDate+'\')">+ добавить занятость</button>';
+      html += '</div>';
+    });
+    html += '</div>';
+    html += '</div>';
+  }
+
+  // Stats
+  html += '<div class="stats">';
+  html += '<div class="stat-card"><div class="stat-num">'+(nextConfirmed ? daysBetween(today, nextConfirmed.data.date) : '—')+'</div>'+
+    '<div class="stat-label">'+(nextConfirmed ? 'дней до «'+escapeHtml(nextConfirmed.data.title)+'» ('+escapeHtml(nextConfirmed.data.date)+')' : 'пока нет подтверждённых свиданий')+'</div></div>';
+  html += '<div class="stat-card"><div class="stat-num">'+(lastConfirmed ? daysBetween(lastConfirmed.data.date, today) : '—')+'</div>'+
+    '<div class="stat-label">'+(lastConfirmed ? 'дней с последнего свидания' : 'история пока пуста')+'</div></div>';
+  html += '</div>';
+
+  // Ribbon
+  html += '<div class="ribbon-card">';
+  html += '<div class="ribbon-head"><h2>Ритм на 2 недели</h2><span>'+escapeHtml(personName('a'))+' / '+escapeHtml(personName('b'))+'</span></div>';
+  html += renderRibbon();
+  html += '<div class="ribbon-legend">'+
+    '<div><i style="background:#4c6b8a"></i>'+escapeHtml(personName('a'))+' на смене</div>'+
+    '<div><i style="background:#b5566b"></i>'+escapeHtml(personName('b'))+' на смене</div>'+
+    '<div><i style="border:2px solid #c08a2e;background:none"></i>оба свободны в этот день</div>'+
+    '<div><i style="background:#5b8266;border-radius:999px"></i>свидание подтверждено</div>'+
+    '</div>';
+  html += '</div>';
+
+  // Tabs
+  html += '<div class="tabs">';
+  html += '<button class="tab-btn '+(tab==='calendar'?'active':'')+'" onclick="setTab(\'calendar\')">Календарь</button>';
+  html += '<button class="tab-btn '+(tab==='ideas'?'active':'')+'" onclick="setTab(\'ideas\')">Идеи для свиданий</button>';
+  html += '</div>';
+
+  if (tab==='ideas'){
+    html += renderIdeasTab();
+    root.innerHTML = html + renderModals();
+    return;
+  }
+
+  // Legend
+  html += '<div class="ribbon-legend" style="margin-bottom:10px">'+
+    '<div><i style="background:var(--gold-soft);border:1px solid var(--gold-line)"></i>свободное окно</div>'+
+    '<div><i style="background:var(--sage-soft);border:1px solid var(--sage-line)"></i>свидание</div>'+
+    '<div><i style="background:var(--line)"></i>кто-то занят</div>'+
+    '</div>';
+
+  html += '<div class="planner">';
+
+  // Month calendar
+  html += '<div class="panel">';
+  html += '<div class="month-nav"><button class="nav-btn" onclick="changeMonth(-1)"'+(monthOffset===0?' disabled':'')+'>←</button>'+
+    '<div class="month-label">'+escapeHtml(monthLabel)+'</div>'+
+    '<button class="nav-btn" onclick="changeMonth(1)">→</button></div>';
+  html += '<div class="panel-sub">Выберите день, чтобы увидеть общее свободное время.</div>';
+  html += '<div class="month-grid">';
+  DAYS.forEach(function(d){ html += '<div class="weekday">'+d+'</div>'; });
+  calendarDays.forEach(function(day){
+    var key = dateKey(day);
+    var inMonth = day.getMonth()===monthStart.getMonth();
+    var past = isPastDate(key);
+    var selected = key===selectedDate;
+    var status = inMonth ? getDayStatus(key) : 'past';
+    var classes = ['day-btn'];
+    if (!inMonth) classes.push('outside');
+    if (past) classes.push('disabled');
+    if (selected) classes.push('selected');
+    if (isTodayKey(key)) classes.push('today');
+
+    var tag = '';
+    if (inMonth && !past){
+      if (status==='plan') tag = '<span class="day-tag tag-plan">свидание</span>';
+      else if (status==='free') tag = '<span class="day-tag tag-free">окно есть</span>';
+      else tag = '<span class="day-tag tag-busy">заняты</span>';
+    }
+    html += '<button class="'+classes.join(' ')+'"'+(inMonth && !past ? ' onclick="selectDate(\''+key+'\')"' : ' disabled')+'>'+
+      '<div class="day-num">'+day.getDate()+'</div>'+tag+'</button>';
+  });
+  html += '</div></div>';
+
+  // Day detail
+  html += '<div class="panel">';
+  html += '<div class="selected-date">'+escapeHtml(formatLongDate(selectedDate))+'</div>';
+  html += '<div class="selected-sub">'+(isTodayKey(selectedDate) ? 'сегодня' : 'выбранный день')+'</div>';
+
+  html += '<div class="block">';
+  html += '<div class="section-title">Свободные окна вдвоём</div>';
+  if (selectedFree.length){
+    html += '<div class="window-list">';
+    selectedFree.forEach(function(iv){
+      var quickEnd = Math.min(iv[1], iv[0]+DEFAULT_DURATION_MIN);
+      html += '<div class="window-row"><div class="window-time">'+formatMinutes(iv[0])+' – '+formatMinutes(iv[1])+'</div>'+
+        '<div class="window-actions"><button class="time-chip" onclick="openPlanModal(\''+selectedDate+'\',\''+formatMinutes(iv[0])+'\',\''+formatMinutes(quickEnd)+'\')">Предложить в это окно</button></div></div>';
+    });
+    html += '</div>';
+    html += '<button class="custom-btn" onclick="openCustomPlan(\''+selectedDate+'\')">Выбрать своё время внутри окна</button>';
+  } else {
+    html += '<div class="empty-state">в этот день пересечений нет :( попробуйте соседний день</div>';
+  }
+  html += '</div>';
+
+  html += '<div class="block">';
+  html += '<div class="section-title">График дня целиком</div>';
+  html += '<div class="timeline-scroll"><div class="timeline-inner">';
+  html += '<div class="timeline-hours">';
+  for (var hr=0; hr<24; hr++){ html += '<div class="timeline-hour">'+formatMinutes(hr*60)+'</div>'; }
+  html += '</div>';
+  html += '<div class="timeline-track">';
+  for (var lh=0; lh<=24; lh++){
+    var top = (lh/1440)*TIMELINE_HEIGHT_PX;
+    html += '<div class="timeline-line" style="top:'+top+'px"></div>';
+  }
+  segments.forEach(function(seg){
+    var top = (seg.start/1440)*TIMELINE_HEIGHT_PX;
+    var height = Math.max(((seg.end-seg.start)/1440)*TIMELINE_HEIGHT_PX, 8);
+    var dur = seg.end-seg.start;
+    var showNote = dur>=40;
+    var cls = { free:'seg-free', a:'seg-a', b:'seg-b', both:'seg-both', 'plan-pending':'seg-plan', 'plan-confirmed':'seg-plan', past:'seg-past' }[seg.type] || 'seg-free';
+    var inner = '<span class="seg-time">'+formatMinutes(seg.start)+'–'+formatMinutes(seg.end)+'</span>'+(showNote?'<span class="seg-note">'+escapeHtml(seg.label)+'</span>':'');
+    if (seg.type==='free'){
+      var freeEnd = Math.min(seg.end, seg.start+DEFAULT_DURATION_MIN);
+      html += '<button class="timeline-seg '+cls+'" style="top:'+top+'px;height:'+height+'px" onclick="openPlanModal(\''+selectedDate+'\',\''+formatMinutes(seg.start)+'\',\''+formatMinutes(freeEnd)+'\')">'+inner+'</button>';
+    } else {
+      html += '<div class="timeline-seg '+cls+'" style="top:'+top+'px;height:'+height+'px">'+inner+'</div>';
+    }
+  });
+  html += '</div></div></div>';
+  html += '</div>';
+
+  html += '<div class="block">';
+  html += '<div class="section-title">Свидания на этот день</div>';
+  if (dayPlans.length){
+    dayPlans.forEach(function(entry){
+      var p = entry.data;
+      html += '<div class="plan-row"><div class="plan-info"><div class="plan-title">'+escapeHtml(p.title)+
+        '<span class="pill '+(p.status==='confirmed'?'pill-confirmed':'pill-pending')+'">'+(p.status==='confirmed'?'подтверждено':'ожидает')+'</span></div>'+
+        '<div class="plan-when">'+escapeHtml(p.startTime)+'–'+escapeHtml(p.endTime)+' · предложил(а) '+escapeHtml(personName(p.proposedBy))+'</div>'+
+        (p.notes ? '<div class="plan-note">'+escapeHtml(p.notes)+'</div>' : '')+'</div>'+
+        '<div class="plan-actions">';
+      if (p.status==='pending'){
+        html += '<button class="btn-mini confirm" onclick="confirmPlan(\''+entry.id+'\')">✓</button>';
+      } else {
+        html += '<button class="btn-mini edit" onclick="unconfirmPlan(\''+entry.id+'\')">↺</button>';
+      }
+      html += '<button class="btn-mini edit" onclick="openEditPlan(\''+entry.id+'\')">✏️</button>'+
+        '<button class="btn-mini reject" onclick="deletePlan(\''+entry.id+'\')">✕</button>'+
+        '</div></div>';
+    });
+  } else {
+    html += '<div class="empty-state">пока ничего не предложено на этот день</div>';
+  }
+  html += '</div>';
+
+  html += '</div>'; // panel
+  html += '</div>'; // planner
+
+  root.innerHTML = html + renderModals();
+}
+
+function renderIdeasTab(){
+  var html = '';
+  html += '<div class="panel">';
+  html += '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">';
+  html += '<h3 style="margin-bottom:0">Общий список идей</h3>';
+  html += '<button class="chip-btn" onclick="openIdeaModal()">+ добавить</button>';
+  html += '</div>';
+  var ids = Object.keys(ideas).sort(function(a,b){ return (ideas[a].done?1:0)-(ideas[b].done?1:0) || (ideas[b].ts||0)-(ideas[a].ts||0); });
+  if (!ids.length){
+    html += '<div class="empty-state">Пока пусто — накидайте, куда сходить и что попробовать вдвоём.</div>';
+  } else {
+    ids.forEach(function(id){
+      var it = ideas[id];
+      html += '<div class="idea-card '+(it.done?'done':'')+'">'+
+        '<div style="flex:1">'+
+        '<div class="idea-title '+(it.done?'done':'')+'">'+escapeHtml(it.title)+'</div>'+
+        '<div class="idea-meta">'+(it.category?'<span class="idea-cat">'+escapeHtml(it.category)+'</span>':'')+(it.cost?'~'+escapeHtml(it.cost)+' ₽':'')+'</div>'+
+        '</div>'+
+        '<div style="display:flex;gap:6px;flex-shrink:0">'+
+        '<button class="btn-mini confirm" onclick="toggleIdea(\''+id+'\')">'+(it.done?'вернуть':'✓ было')+'</button>'+
+        '<button class="btn-mini reject" onclick="deleteIdea(\''+id+'\')">✕</button>'+
+        '</div></div>';
+    });
+  }
+  html += '</div>';
+  return html;
+}
+
+function renderModals(){
+  var html = '';
+
+  if (planModal){
+    html += '<div class="modal-bg" onclick="if(event.target===this)closePlanModal()"><div class="modal">'+
+      '<h3>Предложить свидание</h3><p>'+escapeHtml(formatLongDate(planModal.dateStr))+' · от лица: '+escapeHtml(personName(whoAmI))+'</p>'+
+      '<div class="modal-times">'+
+      '<label>Начало<input id="plan-start-inp" type="time" step="300" value="'+escapeHtml(planModal.startTime)+'"></label>'+
+      '<label>Конец<input id="plan-end-inp" type="time" step="300" value="'+escapeHtml(planModal.endTime)+'"></label>'+
+      '</div>'+
+      '<input id="plan-title-inp" type="text" placeholder="Что делаем? (кино, ужин, гулять...)" maxlength="60">'+
+      '<textarea id="plan-notes-inp" placeholder="Детали, место, идеи (необязательно)" maxlength="200"></textarea>'+
+      '<div class="modal-btns"><button class="btn-secondary" onclick="closePlanModal()">Отмена</button>'+
+      '<button class="btn-primary" onclick="submitPlan()">Предложить</button></div>'+
+      '</div></div>';
+  }
+
+  if (editPlanModal){
+    html += '<div class="modal-bg" onclick="if(event.target===this)closeEditPlan()"><div class="modal">'+
+      '<h3>Редактировать свидание</h3>'+
+      '<label style="font-size:11.5px;color:var(--muted);display:block;margin-bottom:4px">Дата</label>'+
+      '<input id="edit-date-inp" type="date" value="'+escapeHtml(editPlanModal.date)+'">'+
+      '<div class="modal-times">'+
+      '<label>Начало<input id="edit-start-inp" type="time" step="300" value="'+escapeHtml(editPlanModal.startTime)+'"></label>'+
+      '<label>Конец<input id="edit-end-inp" type="time" step="300" value="'+escapeHtml(editPlanModal.endTime)+'"></label>'+
+      '</div>'+
+      '<input id="edit-title-inp" type="text" placeholder="Что делаем?" maxlength="60" value="'+escapeHtml(editPlanModal.title)+'">'+
+      '<textarea id="edit-notes-inp" placeholder="Детали" maxlength="200">'+escapeHtml(editPlanModal.notes)+'</textarea>'+
+      '<label style="font-size:11.5px;color:var(--muted);display:block;margin-bottom:10px">Статус '+
+      '<select id="edit-status-inp" style="margin-top:4px">'+
+      '<option value="pending"'+(editPlanModal.status==='pending'?' selected':'')+'>Ожидает</option>'+
+      '<option value="confirmed"'+(editPlanModal.status==='confirmed'?' selected':'')+'>Подтверждено</option>'+
+      '</select></label>'+
+      '<div class="modal-btns"><button class="btn-secondary" onclick="closeEditPlan()">Отмена</button>'+
+      '<button class="btn-primary" onclick="saveEditPlan()">Сохранить</button></div>'+
+      '</div></div>';
+  }
+
+  if (busyModal){
+    html += '<div class="modal-bg" onclick="if(event.target===this)closeBusyModal()"><div class="modal">'+
+      '<h3>Личная занятость</h3><p>'+escapeHtml(personName(busyModal.person))+' · '+escapeHtml(formatLongDate(busyModal.dateStr))+'</p>'+
+      '<div class="modal-times">'+
+      '<label>Начало<input id="busy-start-inp" type="time" step="300"></label>'+
+      '<label>Конец<input id="busy-end-inp" type="time" step="300"></label>'+
+      '</div>'+
+      '<input id="busy-label-inp" type="text" placeholder="Что за занятость? (необязательно)" maxlength="60">'+
+      '<div class="modal-btns"><button class="btn-secondary" onclick="closeBusyModal()">Отмена</button>'+
+      '<button class="btn-primary" onclick="submitBusy()">Добавить</button></div>'+
+      '</div></div>';
+  }
+
+  if (ideaModal){
+    html += '<div class="modal-bg" onclick="if(event.target===this)closeIdeaModal()"><div class="modal">'+
+      '<h3>Новая идея</h3>'+
+      '<input id="idea-title-inp" type="text" placeholder="Например: съездить на Шарташ" maxlength="80">'+
+      '<select id="idea-cat-inp">'+
+      '<option value="Дома">Дома</option>'+
+      '<option value="На улице">На улице</option>'+
+      '<option value="Еда">Еда</option>'+
+      '<option value="Активности">Активности</option>'+
+      '<option value="Поездка">Поездка</option>'+
+      '<option value="Другое">Другое</option>'+
+      '</select>'+
+      '<input id="idea-cost-inp" type="text" placeholder="Примерный бюджет, ₽ (необязательно)">'+
+      '<div class="modal-btns"><button class="btn-secondary" onclick="closeIdeaModal()">Отмена</button>'+
+      '<button class="btn-primary" onclick="submitIdea()">Добавить</button></div>'+
+      '</div></div>';
+  }
+
+  return html;
+}
+
+</script>
+</body>
+</html>
