@@ -168,8 +168,18 @@
   .idea-cat{display:inline-block;background:var(--rose-soft);color:var(--rose);border-radius:999px;padding:1px 8px;font-size:10px;margin-right:6px;}
   .idea-card{flex-direction:column;align-items:stretch;}
   .idea-card-top{display:flex;align-items:flex-start;justify-content:space-between;gap:8px;}
-  .idea-comment-inp{width:100%;border:1px solid var(--line);border-radius:8px;padding:6px 9px;font-size:12px;outline:none;background:var(--bg-alt);font-family:inherit;margin-top:8px;}
-  .idea-comment-inp:focus{border-color:var(--gold);}
+  .idea-comments{display:flex;flex-direction:column;gap:6px;margin-top:8px;}
+  .comment-post{background:var(--bg-alt);border:1px solid var(--line);border-radius:10px;padding:7px 10px;position:relative;}
+  .comment-post-meta{display:flex;align-items:center;justify-content:flex-end;margin-bottom:2px;}
+  .comment-post-time{font-size:9.5px;color:var(--muted);}
+  .comment-post-text{font-size:12px;line-height:1.35;white-space:pre-wrap;overflow-wrap:anywhere;padding-right:16px;}
+  .comment-post-del{position:absolute;top:6px;right:7px;background:none;border:none;color:var(--muted);font-size:11px;cursor:pointer;line-height:1;padding:2px;}
+  .comment-post-del:hover{color:var(--danger);}
+  .comment-add-row{display:flex;gap:6px;margin-top:8px;align-items:center;}
+  .comment-add-row input{flex:1;border:1px solid var(--line);border-radius:8px;padding:7px 10px;font-size:12px;outline:none;background:var(--bg-alt);font-family:inherit;}
+  .comment-add-row input:focus{border-color:var(--gold);}
+  .comment-send-btn{flex-shrink:0;background:var(--ink);color:#fff;border:none;border-radius:8px;padding:7px 13px;font-size:12px;cursor:pointer;font-family:inherit;}
+  .comment-send-btn:hover{background:#4a3a52;}
 
   .tabs{display:flex;gap:6px;margin-bottom:1.2rem;}
   .tab-btn{padding:7px 14px;border-radius:999px;border:1px solid var(--line);background:var(--bg-alt);font-size:12.5px;color:var(--muted);cursor:pointer;font-family:inherit;}
@@ -296,7 +306,7 @@ var duoConfig = {
 var busyData  = { a: {}, b: {} };   // busyData.a['2026-07-12'] = { key: {start,end,label} }
 var shiftOverrides = { a: {}, b: {} }; // shiftOverrides.b['2026-07-12'] = { mode, start, end, note }
 var plans     = {};                 // plans[id] = {date,startTime,endTime,title,notes,status,ts}
-var ideas     = {};                 // ideas[id] = {title,category,cost,done,ts,comment}
+var ideas     = {};                 // ideas[id] = {title,category,cost,done,ts,comments:{commentId:{text,ts}}}
 var watchItems = {};
 var uiSettings = {};
 
@@ -805,13 +815,25 @@ function addIdeaInline(){
 function submitIdea(){ addIdeaInline(); ideaModal = false; render(); }
 function toggleIdea(id){ db.ref('duo/ideas/'+id+'/done').set(!ideas[id].done); }
 function deleteIdea(id){ if (confirm('Удалить идею?')) db.ref('duo/ideas/'+id).remove(); }
-function saveIdeaComment(id){
-  var el = document.getElementById('idea-comment-'+id);
-  if (!el || !ideas[id]) return;
-  var val = el.value.trim();
-  if (val === (ideas[id].comment||'')) return; // ничего не поменялось
-  db.ref('duo/ideas/'+id+'/comment').set(val || null)
-    .catch(function(err){ alert('Не удалось сохранить комментарий: '+err.message); });
+function addIdeaComment(ideaId){
+  var el = document.getElementById('idea-comment-inp-'+ideaId);
+  if (!el) return;
+  var text = el.value.trim();
+  if (!text) { el.style.borderColor = '#b33f3f'; return; }
+  db.ref('duo/ideas/'+ideaId+'/comments').push({ text:text, ts:Date.now() })
+    .then(function(){ el.value=''; el.style.borderColor=''; })
+    .catch(function(err){ alert('Не удалось отправить комментарий: '+err.message); });
+}
+function deleteIdeaComment(ideaId, commentId){
+  db.ref('duo/ideas/'+ideaId+'/comments/'+commentId).remove();
+}
+function formatCommentTime(ts){
+  var d = new Date(ts);
+  var today = new Date(); today.setHours(0,0,0,0);
+  var dOnly = new Date(d); dOnly.setHours(0,0,0,0);
+  var timePart = pad(d.getHours())+':'+pad(d.getMinutes());
+  if (dOnly.getTime() === today.getTime()) return timePart;
+  return d.getDate()+' '+MONTHS[d.getMonth()]+', '+timePart;
 }
 function setTab(t){ tab = t; render(); }
 function logout(){ auth.signOut(); }
@@ -1221,6 +1243,8 @@ function renderIdeasTab(){
   } else {
     ids.forEach(function(id){
       var it = ideas[id];
+      var comments = it.comments || {};
+      var commentIds = Object.keys(comments).sort(function(a,b){ return (comments[a].ts||0)-(comments[b].ts||0); });
       html += '<div class="idea-card '+(it.done?'done':'')+'">'+
         '<div class="idea-card-top">'+
         '<div style="flex:1">'+
@@ -1229,9 +1253,24 @@ function renderIdeasTab(){
         '<div style="display:flex;gap:6px;flex-shrink:0">'+
         '<button class="btn-mini confirm" onclick="toggleIdea(\''+id+'\')">'+(it.done?'вернуть':'✓ было')+'</button>'+
         '<button class="btn-mini reject" onclick="deleteIdea(\''+id+'\')">✕</button>'+
-        '</div></div>'+
-        '<input class="idea-comment-inp" id="idea-comment-'+id+'" type="text" maxlength="200" placeholder="комментарий (необязательно)" value="'+escapeHtml(it.comment||'')+'" onkeydown="if(event.key===\'Enter\'){this.blur();}" onblur="saveIdeaComment(\''+id+'\')">'+
+        '</div></div>';
+      if (commentIds.length){
+        html += '<div class="idea-comments">';
+        commentIds.forEach(function(cid){
+          var c = comments[cid];
+          html += '<div class="comment-post">'+
+            '<div class="comment-post-meta"><span class="comment-post-time">'+escapeHtml(formatCommentTime(c.ts))+'</span></div>'+
+            '<div class="comment-post-text">'+escapeHtml(c.text)+'</div>'+
+            '<button class="comment-post-del" onclick="deleteIdeaComment(\''+id+'\',\''+cid+'\')">✕</button>'+
+            '</div>';
+        });
+        html += '</div>';
+      }
+      html += '<div class="comment-add-row">'+
+        '<input id="idea-comment-inp-'+id+'" type="text" maxlength="200" placeholder="комментарий..." onkeydown="if(event.key===\'Enter\')addIdeaComment(\''+id+'\')">'+
+        '<button class="comment-send-btn" onclick="addIdeaComment(\''+id+'\')">Отправить</button>'+
         '</div>';
+      html += '</div>'; // idea-card
     });
   }
   html += '</div>';
