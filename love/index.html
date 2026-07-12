@@ -1156,7 +1156,7 @@ function renderIdeasTab(){
   html += '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">';
   html += '<h3 style="margin-bottom:0">Идеи активностей</h3>';
   html += '</div>';
-  html += '<div class="panel-sub">Просто идеи ;3 </div>';
+  html += '<div class="panel-sub">Просто идеи ;3</div>';
   html += '<div class="inline-form"><input id="idea-title-inp" type="text" placeholder="например: сходить в новое кафе" maxlength="80" onkeydown="if(event.key===\'Enter\')addIdeaInline()"><button class="save-btn" onclick="addIdeaInline()">Добавить</button></div>';
   var ids = Object.keys(ideas).sort(function(a,b){ return (ideas[a].done?1:0)-(ideas[b].done?1:0) || (ideas[b].ts||0)-(ideas[a].ts||0); });
   if (!ids.length){
@@ -1212,8 +1212,8 @@ function renderWatchTab(){
         (meta ? '<div class="watch-meta">'+escapeHtml(meta)+'</div>' : '')+
         '</div><button class="btn-mini reject" onclick="deleteWatchItem(\''+id+'\')">✕</button></div>'+
         '<div class="like-row">'+
-        '<button class="like-btn" style="color:'+blue+'" onclick="likeWatchItem(\''+id+'\',\'blue\')">Синий '+(likes.blue ? '✓' : '—')+'</button>'+
-        '<button class="like-btn" style="color:'+pink+'" onclick="likeWatchItem(\''+id+'\',\'pink\')">Розовый '+(likes.pink ? '✓' : '—')+'</button>'+
+        '<button class="like-btn" style="color:'+blue+'" onclick="likeWatchItem(\''+id+'\',\'blue\')">'+escapeHtml(personName('a'))+' '+(likes.blue ? '✓' : '—')+'</button>'+
+        '<button class="like-btn" style="color:'+pink+'" onclick="likeWatchItem(\''+id+'\',\'pink\')">'+escapeHtml(personName('b'))+' '+(likes.pink ? '✓' : '—')+'</button>'+
         '</div></div>';
     });
   }
