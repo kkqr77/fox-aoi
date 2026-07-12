@@ -539,8 +539,8 @@ function getDaySegments(dateStr){
     if (plan) { type = plan.kind; label = plan.label; }
     else if (past) { type = 'past'; label = 'прошло'; }
     else if (hasA && hasB) { type = 'both'; label = personName('a')+' и '+personName('b')+' заняты'; }
-    else if (hasA) { type = 'a'; label = personName('a')+' занят(а)'; }
-    else if (hasB) { type = 'b'; label = personName('b')+' занят(а)'; }
+    else if (hasA) { type = 'a'; label = personName('a')+' занят'; }
+    else if (hasB) { type = 'b'; label = personName('b')+' занята'; }
     else { type = 'free'; label = 'оба свободны'; }
 
     var prev = segments[segments.length-1];
@@ -996,7 +996,7 @@ function render(){
   // Stats
   html += '<div class="stats">';
   html += '<div class="stat-card"><div class="stat-num">'+(nextConfirmed ? daysBetween(today, nextConfirmed.data.date) : '—')+'</div>'+
-    '<div class="stat-label">'+(nextConfirmed ? 'дней до «'+escapeHtml(nextConfirmed.data.title)+'» ('+escapeHtml(nextConfirmed.data.date)+')' : 'пока нет подтверждённых активностей')+'</div></div>';
+    '<div class="stat-label">'+(nextConfirmed ? 'дней до события «'+escapeHtml(nextConfirmed.data.title)+'» ('+escapeHtml(nextConfirmed.data.date)+')' : 'пока нет подтверждённых активностей')+'</div></div>';
   html += '<div class="stat-card"><div class="stat-num">'+(lastConfirmed ? daysBetween(lastConfirmed.data.date, today) : '—')+'</div>'+
     '<div class="stat-label">'+(lastConfirmed ? 'дней с последней активности' : 'история пока пуста')+'</div></div>';
   html += '</div>';
@@ -1008,8 +1008,8 @@ function render(){
   html += '<div class="ribbon-legend">'+
     '<div><i style="background:#4c6b8a"></i>'+escapeHtml(personName('a'))+' на смене</div>'+
     '<div><i style="background:#b5566b"></i>'+escapeHtml(personName('b'))+' на смене</div>'+
-    '<div><i style="border:2px solid #c08a2e;background:none"></i>оба свободны в этот день</div>'+
-    '<div><i style="background:#5b8266;border-radius:999px"></i>активность подтверждена</div>'+
+    '<div><i style="border:2px solid #c08a2e;background:none"></i>мы оба свободны в этот день!</div>'+
+    '<div><i style="background:#5b8266;border-radius:999px"></i>есть планы!</div>'+
     '</div>';
   html += '</div>';
 
@@ -1157,10 +1157,10 @@ function renderIdeasTab(){
   html += '<h3 style="margin-bottom:0">Идеи активностей</h3>';
   html += '</div>';
   html += '<div class="panel-sub">Просто идеи ;3</div>';
-  html += '<div class="inline-form"><input id="idea-title-inp" type="text" placeholder="например: сходить в новое кафе" maxlength="80" onkeydown="if(event.key===\'Enter\')addIdeaInline()"><button class="save-btn" onclick="addIdeaInline()">Добавить</button></div>';
+  html += '<div class="inline-form"><input id="idea-title-inp" type="text" placeholder="например: попробовать что-то новое" maxlength="80" onkeydown="if(event.key===\'Enter\')addIdeaInline()"><button class="save-btn" onclick="addIdeaInline()">Добавить</button></div>';
   var ids = Object.keys(ideas).sort(function(a,b){ return (ideas[a].done?1:0)-(ideas[b].done?1:0) || (ideas[b].ts||0)-(ideas[a].ts||0); });
   if (!ids.length){
-    html += '<div class="empty-state">Пока пусто — накидайте всё, что звучит приятно.</div>';
+    html += '<div class="empty-state">Пока пусто :( </div>';
   } else {
     ids.forEach(function(id){
       var it = ideas[id];
@@ -1190,7 +1190,7 @@ function renderWatchTab(){
     return (bi.ts||0) - (ai.ts||0);
   });
   var html = '<div class="panel">';
-  html += '<h3>Что хотим посмотреть</h3>';
+  html += '<h3>Что мы хотим посмотреть :3 </h3>';
   html += '<div class="panel-sub">Можно добавить только название, а тип и жанр оставить пустыми.</div>';
   html += '<div class="stack-form">'+
     '<input id="watch-title-inp" type="text" placeholder="Название" maxlength="100">'+
@@ -1218,9 +1218,9 @@ function renderWatchTab(){
     });
   }
   html += '<div class="accent-row">'+
-    '<span>Акценты:</span>'+
-    '<label>синий <input id="blue-accent" type="color" value="'+blue+'"></label>'+
-    '<label>розовый <input id="pink-accent" type="color" value="'+pink+'"></label>'+
+    '<span>Можно выбрать свой цвет лайка!</span>'+
+    '<label>Вова <input id="blue-accent" type="color" value="'+blue+'"></label>'+
+    '<label>Диана <input id="pink-accent" type="color" value="'+pink+'"></label>'+
     '<button class="btn-mini edit" onclick="saveAccentSettings()">Сохранить цвета</button>'+
     '</div>';
   html += '</div>';
