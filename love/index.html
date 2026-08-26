@@ -613,6 +613,12 @@ function getDayTagInfo(dateStr){
   if (workA && workB) return { cls:'tag-shift-both', text:'оба на смене' };
   if (workA) return { cls:'tag-shift-a', text:personName('a')+' на смене' };
   if (workB) return { cls:'tag-shift-b', text:personName('b')+' на смене' };
+  // Общий выходной: ни у кого не начинается смена в этот день.
+  // Если единственная "занятость" — хвост ночной смены со вчера (а не личные
+  // занятости), это всё ещё выходной, а не "заняты".
+  var busyA = getBusyIntervals('a', dateStr).length>0;
+  var busyB = getBusyIntervals('b', dateStr).length>0;
+  if (!busyA && !busyB) return { cls:'tag-free', text:'выходной' };
   return { cls:'tag-busy', text:'заняты' };
 }
 function isRangeFree(dateStr, startMin, endMin){
