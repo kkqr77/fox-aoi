@@ -16,6 +16,13 @@
     #gate input { width: 100%; border: 1px solid #ddd; border-radius: 8px; padding: 10px 14px; font-size: 15px; outline: none; margin-bottom: 10px; display: block; }
     #gate-err { color: #e53935; font-size: 12px; margin-bottom: 10px; display: none; }
     #gate button { width: 100%; background: #1a1a1a; color: #fff; border: none; border-radius: 8px; padding: 11px; font-size: 15px; cursor: pointer; }
+    #gate .gate-sep { display: flex; align-items: center; gap: 10px; margin: 14px 0 12px; color: #bbb; font-size: 12px; }
+    #gate .gate-sep::before, #gate .gate-sep::after { content: ''; flex: 1; border-top: 1px solid #e8e8e8; }
+    #gate .gate-google { display: flex; align-items: center; justify-content: center; gap: 9px; width: 100%; background: #fff; color: #3c4043; border: 1px solid #dadce0; border-radius: 8px; padding: 10px; font-size: 14px; font-weight: 500; cursor: pointer; }
+    #gate .gate-google:hover { background: #f8f9fa; box-shadow: 0 1px 2px rgba(60,64,67,.15); }
+    #gate .gate-google:disabled { opacity: .6; cursor: default; box-shadow: none; }
+    #gate .gate-google svg { width: 18px; height: 18px; flex-shrink: 0; }
+    #gate .gate-hint { font-size: 11px; color: #aaa; margin-top: 8px; }
 
     /* Header */
     .header { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 1.5rem; gap: 1rem; }
@@ -183,9 +190,15 @@
   <div id="gate">
     <h2>Календарь записи</h2>
     <p>Введите пароль, чтобы открыть календарь</p>
-    <input id="gate-inp" type="password" placeholder="Пароль">
+    <input id="gate-inp" type="password" placeholder="Пароль" autocomplete="current-password">
     <div id="gate-err">Неверный пароль</div>
     <button id="gate-btn">Войти</button>
+    <div class="gate-sep"><span>или</span></div>
+    <button id="gate-google-btn" class="gate-google" type="button">
+      <svg viewBox="0 0 48 48" aria-hidden="true"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>
+      Войти через Google
+    </button>
+    <div class="gate-hint">Только для админа — вход сохраняется навсегда</div>
   </div>
 
   <div id="root" style="display:none"><div class="loader">Загрузка...</div></div>
@@ -254,25 +267,70 @@ document.getElementById('gate-btn').addEventListener('click', checkGate);
 document.getElementById('gate-inp').addEventListener('keydown', function(e) {
   if (e.key === 'Enter') checkGate();
 });
+document.getElementById('gate-google-btn').addEventListener('click', gateGoogleLogin);
+
+function gateError(message) {
+  var err = document.getElementById('gate-err');
+  err.textContent = message;
+  err.style.display = 'block';
+}
+
+function resetGate() {
+  document.getElementById('gate-err').style.display = 'none';
+  document.getElementById('gate-inp').style.borderColor = '#ddd';
+  var btn = document.getElementById('gate-btn');
+  btn.disabled = false;
+  btn.textContent = 'Войти';
+  document.getElementById('gate-google-btn').disabled = false;
+}
+
+function showGate() {
+  document.getElementById('root').style.display = 'none';
+  document.getElementById('gate').style.display = 'block';
+  setTimeout(function() { document.getElementById('gate-inp').focus(); }, 50);
+}
 
 function checkGate() {
   var password = document.getElementById('gate-inp').value;
   var btn = document.getElementById('gate-btn');
+  resetGate();
   btn.disabled = true;
   btn.textContent = '...';
-  document.getElementById('gate-err').style.display = 'none';
-  document.getElementById('gate-inp').style.borderColor = '#ddd';
 
   firebase.auth().signInWithEmailAndPassword(GUEST_EMAIL, password)
     .then(function() {
-      sessionStorage.setItem('auth_ok', '1');
+      // сессию ведёт onAuthStateChanged ниже — persistence LOCAL держит вход
+      // после закрытия вкладки/браузера и перезагрузки
       openApp();
     })
     .catch(function() {
-      document.getElementById('gate-err').style.display = 'block';
+      gateError('Неверный пароль');
       document.getElementById('gate-inp').style.borderColor = '#e53935';
       btn.disabled = false;
       btn.textContent = 'Войти';
+    });
+}
+
+function gateGoogleLogin() {
+  var btn = document.getElementById('gate-google-btn');
+  resetGate();
+  btn.disabled = true;
+
+  auth.signInWithPopup(new firebase.auth.GoogleAuthProvider())
+    .then(function(result) {
+      // через гейт пускаем только админа; остальные входят по паролю
+      if (result.user && result.user.uid === ADMIN_UID) {
+        openApp();
+        return;
+      }
+      return auth.signOut().then(function() {
+        gateError('Этот Google-аккаунт не админ. Войдите паролем.');
+        btn.disabled = false;
+      });
+    })
+    .catch(function(e) {
+      btn.disabled = false;
+      if (e && e.code !== 'auth/popup-closed-by-user') gateError('Не удалось войти через Google');
     });
 }
 
@@ -284,25 +342,25 @@ function openApp() {
     db.ref('bookings').on('value', function(snap) { bookings = snap.val() || {}; render(); });
     db.ref('config').on('value', function(snap) { workConfig = snap.val() || {}; render(); });
     db.ref('sleep').on('value', function(snap) { sleepData = snap.val() || {}; render(); });
-    auth.onAuthStateChanged(function(user) { currentUser = user; render(); });
   }
 }
 
-if (sessionStorage.getItem('auth_ok')) {
-  // sessionStorage есть, но Firebase Auth мог слететь — проверяем
-  firebase.auth().onAuthStateChanged(function(user) {
-    if (user) {
-      openApp();
-    } else {
-      sessionStorage.removeItem('auth_ok');
-      document.getElementById('gate').style.display = 'block';
-      setTimeout(function() { document.getElementById('gate-inp').focus(); }, 50);
-    }
+// Держим вход постоянно: LOCAL-персистентность Firebase (переживает закрытие
+// вкладки/браузера и перезагрузку) + состояние берём из onAuthStateChanged,
+// а не из sessionStorage, чтобы сессия не слетала.
+auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL)
+  .catch(function() { /* приватный режим / нет IndexedDB — останется дефолтная персистентность */ })
+  .then(function() {
+    auth.onAuthStateChanged(function(user) {
+      currentUser = user;
+      if (user) {
+        openApp();
+        render();
+      } else {
+        showGate();
+      }
+    });
   });
-} else {
-  document.getElementById('gate').style.display = 'block';
-  setTimeout(function() { document.getElementById('gate-inp').focus(); }, 50);
-}
 
 // ============================================================
 // Auth
