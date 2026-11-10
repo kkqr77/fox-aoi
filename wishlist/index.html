@@ -294,6 +294,11 @@ auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL)
   .catch(function() { /* приватный режим / нет IndexedDB — останется дефолтная персистентность */ })
   .then(function() {
     auth.onAuthStateChanged(function(user) {
+      // пускаем только гостевой аккаунт и админа — как в правилах БД
+      if (user && user.email !== GUEST_EMAIL && user.uid !== ADMIN_UID) {
+        auth.signOut();
+        return;
+      }
       currentUser = user;
       if (user) {
         openApp();

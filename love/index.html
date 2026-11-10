@@ -345,11 +345,20 @@ document.getElementById('gate-inp').addEventListener('keydown', function(e){
 
 function loginGoogle() {
   var btn = document.getElementById('google-btn');
+  var err = document.getElementById('gate-err');
   if (btn) btn.disabled = true;
+  err.style.display = 'none';
   auth.signInWithPopup(new firebase.auth.GoogleAuthProvider())
     .then(function(result){
-      // если через Google вошёл именно Вова — запоминаем его локальный профиль
-      if (result.user && result.user.uid === VOVA_UID) { setWho('a'); }
+      // через Google пускаем только админа; остальные входят паролем
+      if (!result.user || result.user.uid !== VOVA_UID) {
+        return auth.signOut().then(function(){
+          err.textContent = 'Этот Google-аккаунт не админ. Войдите паролем.';
+          err.style.display = 'block';
+          if (btn) btn.disabled = false;
+        });
+      }
+      setWho('a');
       openApp();
     })
     .catch(function(e){
@@ -408,6 +417,11 @@ firebase.auth().setPersistence(firebase.auth.Auth.Persistence.LOCAL)
   .catch(function(){ /* если IndexedDB недоступна (приватный режим и т.п.) — останется персистентность по умолчанию */ })
   .then(function(){
     auth.onAuthStateChanged(function(user){
+      // пускаем только гостевой аккаунт и админа — как в правилах БД
+      if (user && user.email !== DUO_EMAIL && user.uid !== VOVA_UID) {
+        auth.signOut();
+        return;
+      }
       currentUser = user;
       if (user) {
         openApp();

@@ -127,101 +127,14 @@ var ADMIN_UID = 'uid_вашего_google_аккаунта';  // Firebase UID а�
 
 ## Правила Firebase Realtime Database
 
-Замените `you@gmail.com` на свой Google-аккаунт администратора.
+Правила задаются в **Realtime Database → Rules** в Firebase Console и в репозиторий не коммитятся. Модель доступа:
 
-```json
-{
-  "rules": {
-    ".read": false,
-    ".write": false,
+- читать данные могут только гостевой аккаунт (`auth@fox-aoi.xyz`) и админ — по `uid`, а не по email;
+- создавать заявки и брони может только гостевой аккаунт (и админ);
+- менять конфиг, сон, вишлист и `duo/*` — только админ; в `duo/*` ещё и гостевой аккаунт `love@us.xyz`;
+- анонимный доступ закрыт полностью.
 
-    "config": {
-      ".read": true,
-      ".write": "auth != null && auth.token.email === 'you@gmail.com' && auth.token.email_verified === true",
-      ".validate": "newData.hasChildren(['referenceDate'])",
-      "referenceDate": {
-        ".validate": "newData.isString() && newData.val().matches(/^(19|20)\\d\\d-(0[1-9]|1[0-2])-(0[1-9]|[12]\\d|3[01])$/)"
-      },
-      "$other": { ".validate": false }
-    },
-
-    "sleep": {
-      ".read": true,
-      "$dateKey": {
-        ".write": "auth != null && auth.token.email === 'you@gmail.com' && auth.token.email_verified === true",
-        ".validate": "!newData.exists() || newData.hasChildren(['start', 'end'])",
-        "start": { ".validate": "newData.isString() && newData.val().matches(/^([01][0-9]|2[0-3]):[0-5][0-9]$/)" },
-        "end":   { ".validate": "newData.isString() && newData.val().matches(/^([01][0-9]|2[0-3]):[0-5][0-9]$/)" },
-        "$other": { ".validate": false }
-      }
-    },
-
-    "bookings": {
-      ".read": true,
-      "$bookingId": {
-        ".write": "(!data.exists() && newData.child('status').val() === 'pending') || (auth != null && auth.token.email === 'you@gmail.com' && auth.token.email_verified === true)",
-        ".validate": "newData.hasChildren(['date', 'time', 'name', 'status', 'ts'])",
-        "date":      { ".validate": "newData.isString() && newData.val().matches(/^(19|20)\\d\\d-(0[1-9]|1[0-2])-(0[1-9]|[12]\\d|3[01])$/)" },
-        "time":      { ".validate": "newData.isString() && newData.val().matches(/^([01][0-9]|2[0-3]):[0-5][0-9]$/)" },
-        "startTime": { ".validate": "!newData.exists() || (newData.isString() && newData.val().matches(/^([01][0-9]|2[0-3]):[0-5][0-9]$/))" },
-        "endTime":   { ".validate": "!newData.exists() || (newData.isString() && newData.val().matches(/^([01][0-9]|2[0-3]):[0-5][0-9]$/))" },
-        "endDate":   { ".validate": "!newData.exists() || (newData.isString() && newData.val().matches(/^(19|20)\\d\\d-(0[1-9]|1[0-2])-(0[1-9]|[12]\\d|3[01])$/))" },
-        "name":      { ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 40" },
-        "activity":  { ".validate": "!newData.exists() || (newData.isString() && newData.val().length > 0 && newData.val().length <= 160)" },
-        "isAnonymous": { ".validate": "!newData.exists() || newData.val() === true || newData.val() === false" },
-        "status":    { ".validate": "newData.isString() && (newData.val() === 'pending' || newData.val() === 'confirmed')" },
-        "ts":        { ".validate": "newData.isNumber() && newData.val() > 0" },
-        "_meta": {
-          ".validate": "newData.hasChildren(['ip', 'ua'])",
-          "ip":       { ".validate": "newData.isString()" },
-          "ua":       { ".validate": "newData.isString()" },
-          "platform": { ".validate": "!newData.exists() || newData.isString()" },
-          "lang":     { ".validate": "!newData.exists() || newData.isString()" },
-          "screen":   { ".validate": "!newData.exists() || newData.isString()" },
-          "tz":       { ".validate": "!newData.exists() || newData.isString()" },
-          "$other":   { ".validate": false }
-        },
-        "$other": { ".validate": false }
-      }
-    },
-
-    "wishlist": {
-      "items": {
-        ".read": true,
-        "$itemId": {
-          ".write": "auth != null && auth.token.email === 'you@gmail.com' && auth.token.email_verified === true",
-          ".validate": "!newData.exists() || newData.hasChildren(['name', 'ts'])",
-          "name":        { ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 100" },
-          "description": { ".validate": "!newData.exists() || (newData.isString() && newData.val().length <= 500)" },
-          "url":         { ".validate": "!newData.exists() || newData.isString()" },
-          "price":       { ".validate": "!newData.exists() || newData.isNumber()" },
-          "currency":    { ".validate": "!newData.exists() || (newData.isString() && newData.val().length <= 5)" },
-          "imageUrl":    { ".validate": "!newData.exists() || newData.isString()" },
-          "category":    { ".validate": "!newData.exists() || (newData.isString() && newData.val().length <= 40)" },
-          "priority":    { ".validate": "!newData.exists() || (newData.isNumber() && newData.val() >= 1 && newData.val() <= 5)" },
-          "tags":        { ".validate": "!newData.exists() || (newData.isString() && newData.val().length <= 200)" },
-          "ts":          { ".validate": "newData.isNumber() && newData.val() > 0" },
-          "$other":      { ".validate": false }
-        }
-      },
-
-      "reservations": {
-        ".read": true,
-        "$itemId": {
-          ".write": "(!data.exists() && auth != null && newData.hasChildren(['name', 'ts'])) || (auth != null && auth.token.email === 'you@gmail.com' && auth.token.email_verified === true)",
-          ".validate": "!newData.exists() || newData.hasChildren(['name', 'ts'])",
-          "name":        { ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 40" },
-          "comment":     { ".validate": "!newData.exists() || (newData.isString() && newData.val().length <= 200)" },
-          "isAnonymous": { ".validate": "!newData.exists() || newData.val() === true || newData.val() === false" },
-          "giftDate":    { ".validate": "!newData.exists() || (newData.isString() && newData.val().length <= 20)" },
-          "ts":          { ".validate": "newData.isNumber() && newData.val() > 0" },
-          "$other":      { ".validate": false }
-        }
-      }
-    }
-  }
-}
-```
+> Если смените email гостевого аккаунта — обновите его и в правилах. Админ определяется по `ADMIN_UID` из кода.
 
 ---
 
