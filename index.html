@@ -251,6 +251,7 @@ var monthOffset = 0;
 var selectedDate = null;
 var currentUser = null;
 var bookings    = {};   // { id: { date, time, name, activity, isAnonymous, status } }
+var slotLocks   = {};   // { '2026-05-03': { bookingId: { start, end } } }
 var workConfig  = {};   // { referenceDate }
 var sleepData   = {};   // { '2026-05-03': { start: '23:00', end: '08:00' } }
 var modal       = null;
@@ -340,6 +341,7 @@ function openApp() {
   if (!fbStarted) {
     fbStarted = true;
     db.ref('bookings').on('value', function(snap) { bookings = snap.val() || {}; render(); });
+    db.ref('slotLocks').on('value', function(snap) { slotLocks = snap.val() || {}; });
     db.ref('config').on('value', function(snap) { workConfig = snap.val() || {}; render(); });
     db.ref('sleep').on('value', function(snap) { sleepData = snap.val() || {}; render(); });
   }
@@ -452,6 +454,8 @@ function parseTimeToMinutes(value) {
   var parts = value.split(':');
   var hours = parseInt(parts[0], 10);
   var minutes = parseInt(parts[1], 10);
+  // 24:00 — конец суток; так сохранялись брони до фикса полуночи.
+  if (hours === 24 && minutes === 0) return 1440;
   if (hours < 0 || hours > 23 || minutes < 0 || minutes > 59) return null;
   return hours * 60 + minutes;
 }
@@ -519,6 +523,98 @@ function getBookingIntervalForDate(booking, dateStr) {
   if (dateStr === startDate) return [startMin, 1440];
   if (dateStr === endDate) return [0, endMin === null ? 0 : endMin];
   return [0, 1440];
+}
+function getBookingSegments(booking) {
+  var segments = [];
+  if (!booking || !booking.date) return segments;
+  var endDate = getBookingEndDate(booking);
+  var cursor = booking.date;
+  var guard = 0;
+  while (cursor <= endDate && guard < 14) {
+    var interval = getBookingIntervalForDate(booking, cursor);
+    if (interval && interval[1] > interval[0]) {
+      segments.push({ date: cursor, start: interval[0], end: interval[1] });
+    }
+    cursor = addDays(cursor, 1);
+    guard++;
+  }
+  return segments;
+}
+function rangesOverlap(aStart, aEnd, bStart, bEnd) {
+  return aStart < bEnd && bStart < aEnd;
+}
+// Атомарно занимает интервалы в slotLocks/{date}/{bookingId}.
+// Возвращает массив {date, prev}; при конфликте откатывает уже занятые даты.
+function claimBookingSlots(bookingId, segments) {
+  var claims = [];
+  var chain = Promise.resolve();
+
+  segments.forEach(function(seg) {
+    chain = chain.then(function() {
+      var prev = null;
+      return db.ref('slotLocks/' + seg.date).transaction(function(current) {
+        var locks = current || {};
+        var taken = false;
+        Object.keys(locks).forEach(function(otherId) {
+          if (otherId === bookingId) return;
+          var other = locks[otherId] || {};
+          var otherStart = Number(other.start);
+          var otherEnd = Number(other.end);
+          if (isNaN(otherStart) || isNaN(otherEnd)) return;
+          if (rangesOverlap(seg.start, seg.end, otherStart, otherEnd)) taken = true;
+        });
+        if (taken) return; // отменяем транзакцию
+        prev = locks[bookingId] || null;
+        var next = {};
+        Object.keys(locks).forEach(function(key) { next[key] = locks[key]; });
+        next[bookingId] = { start: seg.start, end: seg.end };
+        return next;
+      }, undefined, false).then(function(result) {
+        if (!result.committed) {
+          var err = new Error('Это время только что занял кто-то другой. Выберите другое.');
+          err.code = 'slot-taken';
+          err.date = seg.date;
+          throw err;
+        }
+        claims.push({ date: seg.date, prev: prev, bookingId: bookingId });
+      });
+    });
+  });
+
+  return chain.then(function() {
+    return claims;
+  }).catch(function(err) {
+    return restoreBookingSlots(claims).then(function() { throw err; });
+  });
+}
+function restoreBookingSlots(claims) {
+  return claims.slice().reverse().reduce(function(chain, claim) {
+    return chain.then(function() {
+      var ref = db.ref('slotLocks/' + claim.date + '/' + claim.bookingId);
+      return claim.prev ? ref.set(claim.prev) : ref.remove();
+    }).catch(function() { /* лучшие усилия: не мешаем основной ошибке */ });
+  }, Promise.resolve());
+}
+function releaseBookingSlots(bookingId, segments) {
+  return segments.reduce(function(chain, seg) {
+    return chain.then(function() {
+      return db.ref('slotLocks/' + seg.date + '/' + bookingId).remove();
+    }).catch(function() {});
+  }, Promise.resolve());
+}
+// Снимает все блокировки брони, включая оставшиеся после сбоя между
+// захватом слота и сохранением.
+function releaseAllBookingLocks(bookingId, segments) {
+  var dates = {};
+  segments.forEach(function(seg) { dates[seg.date] = true; });
+  Object.keys(slotLocks).forEach(function(date) {
+    if (slotLocks[date] && slotLocks[date][bookingId]) dates[date] = true;
+  });
+  return Object.keys(dates).reduce(function(chain, date) {
+    return chain.then(function() {
+      return db.ref('slotLocks/' + date + '/' + bookingId).remove();
+    }).catch(function() {});
+  }, Promise.resolve());
 }
 function getBookingEndTime(booking) {
   var endDate = getBookingEndDate(booking);
@@ -906,7 +1002,7 @@ function confirmBookingForm() {
     return;
   }
 
-  var endDate = normalizedEndMin > 1440 ? addDays(modal.dateStr, 1) : modal.dateStr;
+  var endDate = normalizedEndMin >= 1440 ? addDays(modal.dateStr, 1) : modal.dateStr;
 
   var submitBtn = document.querySelector('.btn-primary');
   if (submitBtn) { submitBtn.disabled = true; submitBtn.textContent = '...'; }
@@ -915,7 +1011,7 @@ function confirmBookingForm() {
     date: modal.dateStr,
     time: formatMinutes(startMin),
     startTime: formatMinutes(startMin),
-    endTime: formatMinutes(normalizedEndMin > 1440 ? normalizedEndMin - 1440 : normalizedEndMin),
+    endTime: formatMinutes(normalizedEndMin >= 1440 ? normalizedEndMin - 1440 : normalizedEndMin),
     endDate: endDate,
     name: name,
     activity: activity,
@@ -924,15 +1020,27 @@ function confirmBookingForm() {
     ts: Date.now()
   };
 
+  var segments = getBookingSegments(bookingData);
+  var bookingRef = db.ref('bookings').push();
+  var bookingId = bookingRef.key;
+  var bookingWritten = false;
+
   getClientMeta().then(function(meta) {
     bookingData._meta = meta;
-    return db.ref('bookings').push(bookingData);
+    return bookingRef.set(bookingData).then(function() {
+      bookingWritten = true;
+    });
+  }).then(function() {
+    return claimBookingSlots(bookingId, segments);
   }).then(function() {
     modal = null;
     render();
   }).catch(function(error) {
-    if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = 'подтвердить'; }
-    alert('Не удалось создать запись: ' + error.message);
+    var cleanup = bookingWritten ? bookingRef.remove().catch(function() {}) : Promise.resolve();
+    cleanup.then(function() {
+      if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = 'подтвердить'; }
+      alert('Не удалось создать запись: ' + error.message);
+    });
   });
 }
 
@@ -941,7 +1049,15 @@ function confirmBooking(id) {
 }
 
 function rejectBooking(id) {
-  db.ref('bookings/' + id).remove();
+  var booking = bookings[id];
+  var segments = booking ? getBookingSegments(booking) : [];
+  db.ref('bookings/' + id).remove()
+    .then(function() {
+      return releaseAllBookingLocks(id, segments);
+    })
+    .catch(function(err) {
+      alert('Не удалось удалить запись: ' + err.message);
+    });
 }
 
 function openEditBooking(id) {
@@ -951,7 +1067,7 @@ function openEditBooking(id) {
     id: id,
     date: b.date || '',
     startTime: b.startTime || b.time || '',
-    endTime: b.endTime || '',
+    endTime: b.endTime === '24:00' ? '00:00' : (b.endTime || ''),
     name: b.name || '',
     activity: b.activity || '',
     isAnonymous: !!b.isAnonymous,
@@ -988,7 +1104,7 @@ function saveEditedBooking() {
   if (!nameInp) { alert('Укажи имя'); return; }
   if (!activityInp) { alert('Укажи активность'); return; }
 
-  var endDate = normalizedEndMin > 1440 ? addDays(dateInp, 1) : dateInp;
+  var endDate = normalizedEndMin >= 1440 ? addDays(dateInp, 1) : dateInp;
 
   var saveBtn = document.getElementById('edit-save-btn');
   if (saveBtn) { saveBtn.disabled = true; saveBtn.textContent = '...'; }
@@ -997,7 +1113,7 @@ function saveEditedBooking() {
     date: dateInp,
     time: formatMinutes(startMin),
     startTime: formatMinutes(startMin),
-    endTime: formatMinutes(normalizedEndMin > 1440 ? normalizedEndMin - 1440 : normalizedEndMin),
+    endTime: formatMinutes(normalizedEndMin >= 1440 ? normalizedEndMin - 1440 : normalizedEndMin),
     endDate: endDate,
     name: nameInp,
     activity: activityInp,
@@ -1007,7 +1123,22 @@ function saveEditedBooking() {
     _meta: bookings[id] ? (bookings[id]._meta || null) : null
   };
 
-  db.ref('bookings/' + id).update(updated)
+  var previous = bookings[id];
+  var oldSegments = previous ? getBookingSegments(previous) : [];
+  var newSegments = getBookingSegments(updated);
+
+  claimBookingSlots(id, newSegments)
+    .then(function(claims) {
+      return db.ref('bookings/' + id).update(updated).catch(function(err) {
+        return restoreBookingSlots(claims).then(function() { throw err; });
+      });
+    })
+    .then(function() {
+      var keep = {};
+      newSegments.forEach(function(seg) { keep[seg.date] = true; });
+      var stale = oldSegments.filter(function(seg) { return !keep[seg.date]; });
+      return releaseBookingSlots(id, stale);
+    })
     .then(function() {
       editModal = null;
       render();
