@@ -26,9 +26,15 @@
 
     /* Header */
     .header { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 1.5rem; gap: 1rem; }
-    .header h1 { font-size: 20px; font-weight: 500; }
-    .header p { font-size: 13px; color: #888; margin-top: 3px; }
-    .auth-btn { padding: 6px 12px; border-radius: 8px; border: 1px solid #ddd; background: #fff; font-size: 13px; color: #555; cursor: pointer; white-space: nowrap; flex-shrink: 0; }
+    .header-text { min-width: 0; }
+    .header h1 { font-size: 20px; font-weight: 500; line-height: 1.25; }
+    .header p { font-size: 13px; color: #888; line-height: 1.45; margin-top: 4px; }
+    .header-lead { max-width: 52ch; }
+    .header-note { font-size: 12px; color: #999; margin-top: 6px; }
+    .header-tz { display: inline-flex; align-items: center; margin-top: 8px; padding: 3px 10px; border-radius: 999px; background: #fff; border: 1px solid #e8e8e8; color: #777; font-size: 11px; line-height: 1.4; }
+    .header-tz b { font-weight: 500; color: #555; }
+    .header-actions { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+    .auth-btn { padding: 6px 12px; border-radius: 8px; border: 1px solid #ddd; background: #fff; font-size: 13px; color: #555; cursor: pointer; white-space: nowrap; flex-shrink: 0; max-width: 100%; overflow: hidden; text-overflow: ellipsis; }
     .auth-btn:hover { background: #f0f0f0; }
     .auth-btn.logged { border-color: #c8e6c9; background: #f1f8e9; color: #388e3c; }
 
@@ -174,6 +180,10 @@
     .loader { text-align: center; padding: 3rem; color: #aaa; font-size: 14px; }
 
     @media (max-width: 500px) {
+      .header { flex-direction: column; gap: 12px; }
+      .header-actions { width: 100%; justify-content: flex-start; flex-wrap: wrap; }
+      .header h1 { font-size: 19px; }
+      .header-lead { max-width: none; }
       .planner { grid-template-columns: 1fr; }
       .day-btn { min-height: 60px; padding: 7px 5px; }
       .day-num-big { font-size: 14px; }
@@ -1233,12 +1243,13 @@ function render() {
   var html = '';
 
   // Header
-  html += '<div class="header"><div>' +
+  html += '<div class="header"><div class="header-text">' +
   '<h1>Когда я обычно свободен</h1>' +
-  '<p>Это примерный график, чтобы было проще пересекаться, ЧАСОВОЙ ПОЯС - ЕКАТЕРИНБУРГ, GMT+5, МСК + 2</p>' +
-  '<p style="font-size:12px;color:#999;margin-top:4px;">не строгая запись — можно просто написать вне слотов :)</p>' +
+  '<p class="header-lead">Примерный график, чтобы проще пересекаться.</p>' +
+  '<p class="header-note">Не строгая запись — можно написать и вне слотов :)</p>' +
+  '<p class="header-tz"><b>Екатеринбург</b> · GMT+5 · МСК+2</p>' +
   '</div>';
-  html += '<div style="display:flex;align-items:center;gap:8px;flex-shrink:0">';
+  html += '<div class="header-actions">';
   html += '<a href="https://kkqr77.github.io/fox-aoi/wishlist/" style="text-decoration:none;"><button class="auth-btn" style="background:#f5f0ff;border-color:#d8b4fe;color:#7c3aed;white-space:nowrap">🎁 Вишлист</button></a>';
   if (currentUser) {
     html += '<button class="auth-btn logged" onclick="logout()">✓ ' + escapeHtml(currentUser.displayName || 'Выйти') + ' — выйти</button>';
