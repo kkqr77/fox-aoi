@@ -1,0 +1,340 @@
+/* Shared theme tokens for fox-aoi.
+   Light is the default; dark is set on <html data-theme="dark">.
+   The effective theme is chosen by theme.js (system preference or manual). */
+
+:root {
+  color-scheme: light;
+
+  --font-ui: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --font-display: 'Newsreader', Georgia, 'Times New Roman', serif;
+
+  --radius-xs: 6px;
+  --radius-sm: 9px;
+  --radius: 13px;
+  --radius-lg: 18px;
+
+  --bg: #f3f1ec;
+  --surface: #fffdf9;
+  --surface-2: #f8f5ee;
+  --surface-3: #f1ede4;
+
+  --ink: #24231f;
+  --ink-soft: #4a4842;
+  --muted: #767168;
+  --faint: #9a9489;
+
+  --line: #e3ddd1;
+  --line-strong: #d2cabb;
+
+  --accent: #3d6357;
+  --accent-ink: #2b4a41;
+  --accent-soft: #e7f0eb;
+  --accent-line: #b8d2c7;
+  --accent-contrast: #ffffff;
+
+  --focus: #3d6357;
+  --focus-ring: rgba(61, 99, 87, 0.22);
+
+  --danger: #a33b3b;
+  --danger-soft: #f8e7e7;
+  --danger-line: #e6b4b4;
+  --danger-contrast: #ffffff;
+
+  --warn: #8a5a12;
+  --warn-soft: #fbf0d6;
+  --warn-line: #e6c983;
+  --warn-contrast: #ffffff;
+
+  --info: #315b7d;
+  --info-soft: #e8f0f7;
+  --info-line: #b9cfdf;
+  --info-contrast: #ffffff;
+
+  --sleep: #6b4c86;
+  --sleep-soft: #f0eaf7;
+  --sleep-line: #cdb9df;
+
+  --work: #9b3d4a;
+  --work-soft: #f8e7ea;
+  --work-line: #e3b3ba;
+
+  --p1: #a33b3b;
+  --p1-soft: #f8e7e7;
+  --p1-line: #e6b4b4;
+  --p1-ink: #8f3232;
+
+  --p2: #a8761c;
+  --p2-soft: #fbf0d6;
+  --p2-line: #e6c983;
+  --p2-ink: #7d5510;
+
+  --p3: #3a6f96;
+  --p3-soft: #e8f0f7;
+  --p3-line: #b9cfdf;
+  --p3-ink: #2f5c7d;
+
+  --p4: #7a5a99;
+  --p4-soft: #f0eaf7;
+  --p4-line: #cdb9df;
+  --p4-ink: #61457d;
+
+  --p5: #5f6a60;
+  --p5-soft: #eef0ee;
+  --p5-line: #c8cfc6;
+  --p5-ink: #4d564e;
+
+  --past-bg: #f2f0eb;
+  --past-ink: #a8a297;
+
+  --bar-track: #e9e4da;
+  --bar-work: #d78f98;
+  --bar-sleep: #b99ad3;
+  --bar-confirmed: #7fa8cf;
+  --bar-pending: #d9b45e;
+  --bar-past: #d8d2c6;
+
+  --overlay: rgba(30, 28, 24, 0.45);
+  --shadow: 0 10px 30px rgba(36, 35, 31, 0.1);
+  --shadow-sm: 0 1px 2px rgba(36, 35, 31, 0.05);
+}
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
+
+  --bg: #141613;
+  --surface: #1c1f1b;
+  --surface-2: #22261f;
+  --surface-3: #282d25;
+
+  --ink: #ece9e1;
+  --ink-soft: #cfccc2;
+  --muted: #a19b8f;
+  --faint: #7f7a70;
+
+  --line: #32372e;
+  --line-strong: #41473b;
+
+  --accent: #9cc4b6;
+  --accent-ink: #c3e2d6;
+  --accent-soft: #22332b;
+  --accent-line: #3d5b4f;
+  --accent-contrast: #14211b;
+
+  --focus: #9cc4b6;
+  --focus-ring: rgba(156, 196, 182, 0.24);
+
+  --danger: #e6a0a0;
+  --danger-soft: #3a2222;
+  --danger-line: #5c3434;
+  --danger-contrast: #2a1414;
+
+  --warn: #e3c07a;
+  --warn-soft: #382e1b;
+  --warn-line: #5a4928;
+  --warn-contrast: #241c0e;
+
+  --info: #9dc3e0;
+  --info-soft: #1f2f3a;
+  --info-line: #365062;
+  --info-contrast: #101c24;
+
+  --sleep: #c3a8e0;
+  --sleep-soft: #2e2438;
+  --sleep-line: #4a3a5c;
+
+  --work: #e6a3ac;
+  --work-soft: #3a2328;
+  --work-line: #5a353c;
+
+  --p1: #c96a6a;
+  --p1-soft: #3a2222;
+  --p1-line: #5c3434;
+  --p1-ink: #e6a0a0;
+
+  --p2: #c9a24a;
+  --p2-soft: #382e1b;
+  --p2-line: #5a4928;
+  --p2-ink: #e3c07a;
+
+  --p3: #6b9cc0;
+  --p3-soft: #1f2f3a;
+  --p3-line: #365062;
+  --p3-ink: #9dc3e0;
+
+  --p4: #9b7fc0;
+  --p4-soft: #2e2438;
+  --p4-line: #4a3a5c;
+  --p4-ink: #c3a8e0;
+
+  --p5: #7d887c;
+  --p5-soft: #242a24;
+  --p5-line: #3a423a;
+  --p5-ink: #b3bcb1;
+
+  --past-bg: #20231e;
+  --past-ink: #6f6b62;
+
+  --bar-track: #2b3028;
+  --bar-work: #a9636d;
+  --bar-sleep: #8d6fa6;
+  --bar-confirmed: #5f86a8;
+  --bar-pending: #a9853f;
+  --bar-past: #3a3f36;
+
+  --overlay: rgba(0, 0, 0, 0.62);
+  --shadow: 0 12px 36px rgba(0, 0, 0, 0.34);
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.22);
+}
+
+html {
+  background: var(--bg);
+}
+
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--font-ui);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+button,
+input,
+select,
+textarea {
+  font-family: inherit;
+}
+
+img {
+  max-width: 100%;
+}
+
+::selection {
+  background: var(--accent-line);
+  color: var(--ink);
+}
+
+:where(button, a, input, select, textarea):focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
+
+:where(button, a) {
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.skip-link {
+  position: absolute;
+  left: -9999px;
+  top: 0;
+  z-index: 1000;
+  padding: 10px 16px;
+  border-radius: 0 0 var(--radius-sm) 0;
+  background: var(--ink);
+  color: var(--surface);
+  font-size: 13px;
+  font-weight: 500;
+  text-decoration: none;
+}
+
+.skip-link:focus {
+  left: 0;
+}
+
+.eyebrow {
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.display {
+  font-family: var(--font-display);
+  font-weight: 500;
+  letter-spacing: -0.018em;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* Theme switch */
+.theme-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: var(--muted);
+  cursor: pointer;
+  transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+
+.theme-btn:hover {
+  background: var(--surface-2);
+  border-color: var(--line-strong);
+  color: var(--ink);
+}
+
+.theme-btn svg {
+  width: 17px;
+  height: 17px;
+  flex-shrink: 0;
+}
+
+.theme-btn-label {
+  display: none;
+}
+
+/* Shared toast */
+.toast {
+  position: fixed;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%) translateY(6px);
+  z-index: 9999;
+  max-width: calc(100vw - 32px);
+  padding: 10px 18px;
+  border-radius: 999px;
+  border: 1px solid var(--line-strong);
+  background: var(--ink);
+  color: var(--surface);
+  font-size: 13px;
+  font-weight: 500;
+  text-align: center;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+.toast.show {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

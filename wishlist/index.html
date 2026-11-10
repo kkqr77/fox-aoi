@@ -2,144 +2,150 @@
 <html lang="ru">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Вишлист 🎁</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>Список желаний</title>
+  <meta name="theme-color" id="theme-color" content="#f3f1ec">
+  <script src="../theme.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;1,6..72,400&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../theme.css">
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f5f5f3; color: #1a1a1a; min-height: 100vh; }
-    .page { max-width: 960px; margin: 0 auto; padding: 2rem 1rem 4rem; }
 
-    /* ── Gate ── */
-    #gate { display: none; max-width: 320px; margin: 6rem auto; text-align: center; }
-    #gate h2 { font-size: 20px; font-weight: 500; margin-bottom: 8px; }
-    #gate p  { font-size: 13px; color: #888; margin-bottom: 1.5rem; }
-    #gate input { width: 100%; border: 1px solid #ddd; border-radius: 8px; padding: 10px 14px; font-size: 15px; outline: none; margin-bottom: 10px; display: block; }
-    #gate-err   { color: #e53935; font-size: 12px; margin-bottom: 10px; display: none; }
-    #gate button { width: 100%; background: #1a1a1a; color: #fff; border: none; border-radius: 8px; padding: 11px; font-size: 15px; cursor: pointer; }
-    #gate .gate-sep { display: flex; align-items: center; gap: 10px; margin: 14px 0 12px; color: #bbb; font-size: 12px; }
-    #gate .gate-sep::before, #gate .gate-sep::after { content: ''; flex: 1; border-top: 1px solid #e8e8e8; }
-    #gate .gate-google { display: flex; align-items: center; justify-content: center; gap: 9px; width: 100%; background: #fff; color: #3c4043; border: 1px solid #dadce0; border-radius: 8px; padding: 10px; font-size: 14px; font-weight: 500; cursor: pointer; }
-    #gate .gate-google:hover { background: #f8f9fa; box-shadow: 0 1px 2px rgba(60,64,67,.15); }
-    #gate .gate-google:disabled { opacity: .6; cursor: default; box-shadow: none; }
-    #gate .gate-google svg { width: 18px; height: 18px; flex-shrink: 0; }
-    #gate .gate-hint { font-size: 11px; color: #aaa; margin-top: 8px; }
+    body { min-height: 100vh; font-size: 15px; line-height: 1.5; }
+    .page { max-width: 1000px; margin: 0 auto; padding: 2.5rem 1.25rem calc(5rem + env(safe-area-inset-bottom)); }
+    .app-main:focus { outline: none; }
 
-    /* ── Header ── */
-    .header { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 1.5rem; gap: 1rem; flex-wrap: wrap; }
-    .header-left { display: flex; flex-direction: column; gap: 3px; }
-    .back-link { font-size: 12px; color: #888; text-decoration: none; margin-bottom: 2px; }
-    .back-link:hover { color: #555; }
-    .header h1 { font-size: 22px; font-weight: 600; }
-    .header-sub { font-size: 13px; color: #888; }
-    .header-btns { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
-    .auth-btn { padding: 6px 12px; border-radius: 8px; border: 1px solid #ddd; background: #fff; font-size: 13px; color: #555; cursor: pointer; white-space: nowrap; }
-    .auth-btn:hover { background: #f0f0f0; }
-    .auth-btn.logged { border-color: #c8e6c9; background: #f1f8e9; color: #388e3c; }
+    /* Header */
+    .header { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 1.25rem 1.5rem; align-items: start; margin-bottom: 1.75rem; }
+    .header-left { min-width: 0; }
+    .back-link { display: inline-flex; align-items: center; gap: 4px; font-size: 11.5px; color: var(--muted); text-decoration: none; margin-bottom: 10px; }
+    .back-link:hover { color: var(--ink); }
+    .header h1 { font-family: var(--font-display); font-size: clamp(32px, 6vw, 46px); font-weight: 500; line-height: 1.04; letter-spacing: -0.02em; margin-top: 6px; text-wrap: balance; }
+    .header-sub { font-size: 14px; color: var(--ink-soft); line-height: 1.5; margin-top: 0.6rem; max-width: 54ch; }
+    .header-btns { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
+    .auth-btn { display: inline-flex; align-items: center; gap: 6px; padding: 8px 12px; border: 1px solid var(--line); border-radius: var(--radius-sm); background: var(--surface); color: var(--ink-soft); font-size: 13px; font-weight: 500; cursor: pointer; text-decoration: none; white-space: nowrap; max-width: 100%; overflow: hidden; text-overflow: ellipsis; transition: background-color 0.15s, border-color 0.15s, color 0.15s; }
+    .auth-btn:hover { background: var(--surface-2); border-color: var(--line-strong); color: var(--ink); }
+    .auth-btn.logged { border-color: var(--accent-line); background: var(--accent-soft); color: var(--accent-ink); }
 
-    /* ── Admin panel ── */
-    .admin-panel { background: #fff; border: 1px solid #e0e0e0; border-radius: 10px; padding: 14px 16px; margin-bottom: 1.5rem; font-size: 13px; display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
-    .admin-panel h3 { font-size: 14px; font-weight: 500; }
-    .admin-hint { font-size: 12px; color: #888; }
+    /* Admin panel */
+    .admin-panel { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius-lg); padding: 14px 16px; margin-bottom: 1.5rem; font-size: 13px; }
+    .admin-title { font-size: 13px; font-weight: 600; }
+    .admin-hint { font-size: 11.5px; color: var(--muted); margin-top: 2px; }
+    .btn-add { background: var(--accent); color: var(--accent-contrast); border: 1px solid var(--accent); border-radius: var(--radius-xs); padding: 8px 15px; font-size: 12.5px; font-weight: 600; cursor: pointer; transition: filter 0.15s; }
+    .btn-add:hover { filter: brightness(1.06); }
 
-    /* ── Filters ── */
-    .filters { background: #fff; border: 1px solid #e8e8e8; border-radius: 12px; padding: 14px 16px; margin-bottom: 1.5rem; display: flex; flex-direction: column; gap: 10px; }
+    /* Filters */
+    .filters { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius-lg); padding: 14px 16px; margin-bottom: 1.75rem; display: flex; flex-direction: column; gap: 12px; }
     .filter-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
-    .filter-label { font-size: 12px; color: #888; white-space: nowrap; }
-    .filter-select { border: 1px solid #ddd; border-radius: 8px; padding: 5px 10px; font-size: 13px; outline: none; background: #fff; color: #333; cursor: pointer; }
-    .pill { border: 1px solid #ddd; border-radius: 999px; padding: 4px 12px; font-size: 12px; background: #fff; color: #555; cursor: pointer; transition: all 0.15s; white-space: nowrap; }
-    .pill:hover { border-color: #bbb; }
-    .pill.active { background: #1a1a1a; color: #fff; border-color: #1a1a1a; }
-    .pill.p1.active { background: #c62828; border-color: #c62828; }
-    .pill.p2.active { background: #e65100; border-color: #e65100; }
-    .pill.p3.active { background: #1565c0; border-color: #1565c0; }
-    .pill.p4.active { background: #6a1b9a; border-color: #6a1b9a; }
-    .pill.p5.active { background: #546e7a; border-color: #546e7a; }
+    .filter-pair { display: inline-flex; align-items: center; gap: 6px; }
+    .filter-label { font-size: 10.5px; font-weight: 600; letter-spacing: 0.09em; text-transform: uppercase; color: var(--muted); }
+    .filter-select { border: 1px solid var(--line); border-radius: var(--radius-xs); padding: 6px 10px; font-size: 12.5px; background: var(--surface-2); color: var(--ink); cursor: pointer; transition: border-color 0.15s; }
+    .filter-select:hover { border-color: var(--line-strong); }
+    .pill { display: inline-flex; align-items: center; gap: 6px; border: 1px solid var(--line); border-radius: 999px; padding: 5px 11px; font-size: 11.5px; font-weight: 500; background: var(--surface-2); color: var(--ink-soft); cursor: pointer; white-space: nowrap; transition: background-color 0.15s, border-color 0.15s, color 0.15s; }
+    .pill:hover { border-color: var(--line-strong); color: var(--ink); }
+    .pill.active { background: var(--ink); border-color: var(--ink); color: var(--surface); }
+    .pill.p1 { --pill: var(--p1); --pill-soft: var(--p1-soft); --pill-line: var(--p1-line); --pill-ink: var(--p1-ink); }
+    .pill.p2 { --pill: var(--p2); --pill-soft: var(--p2-soft); --pill-line: var(--p2-line); --pill-ink: var(--p2-ink); }
+    .pill.p3 { --pill: var(--p3); --pill-soft: var(--p3-soft); --pill-line: var(--p3-line); --pill-ink: var(--p3-ink); }
+    .pill.p4 { --pill: var(--p4); --pill-soft: var(--p4-soft); --pill-line: var(--p4-line); --pill-ink: var(--p4-ink); }
+    .pill.p5 { --pill: var(--p5); --pill-soft: var(--p5-soft); --pill-line: var(--p5-line); --pill-ink: var(--p5-ink); }
+    .pill.p1::before, .pill.p2::before, .pill.p3::before, .pill.p4::before, .pill.p5::before { content: ''; width: 6px; height: 6px; border-radius: 50%; background: var(--pill); flex-shrink: 0; }
+    .pill.p1.active, .pill.p2.active, .pill.p3.active, .pill.p4.active, .pill.p5.active { background: var(--pill); border-color: var(--pill); color: var(--accent-contrast); }
+    .pill.p1.active::before, .pill.p2.active::before, .pill.p3.active::before, .pill.p4.active::before, .pill.p5.active::before { background: var(--accent-contrast); }
 
-    /* ── Items grid ── */
-    .items-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 16px; }
-    .empty-state { border: 1px dashed #e1e1e1; border-radius: 12px; padding: 2rem; font-size: 14px; color: #777; background: #fbfbfb; text-align: center; }
+    /* Items grid */
+    .items-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 18px; }
+    .empty-state { border: 1px dashed var(--line-strong); border-radius: var(--radius-lg); padding: 2.5rem 1.5rem; font-size: 13.5px; color: var(--muted); background: transparent; text-align: center; line-height: 1.5; }
 
-    /* ── Item card ── */
-    .item-card { background: #fff; border: 1px solid #e8e8e8; border-radius: 14px; overflow: hidden; display: flex; flex-direction: column; transition: box-shadow 0.15s; }
-    .item-card:hover { box-shadow: 0 4px 16px rgba(0,0,0,0.07); }
-    .item-card.reserved { opacity: 0.72; }
-    .item-img-wrap { width: 100%; height: 180px; overflow: hidden; background: #f0f0f0; }
+    /* Item card */
+    .item-card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius-lg); overflow: hidden; display: flex; flex-direction: column; transition: border-color 0.15s, transform 0.15s; }
+    .item-card:hover { border-color: var(--line-strong); transform: translateY(-1px); }
+    .item-card.reserved { background: var(--surface-2); }
+    .item-card.reserved .item-img { filter: grayscale(0.35); opacity: 0.9; }
+    .item-img-wrap { width: 100%; aspect-ratio: 4 / 3; overflow: hidden; background: var(--surface-3); }
     .item-img { width: 100%; height: 100%; object-fit: cover; display: block; }
-    .item-img-placeholder { width: 100%; height: 140px; display: flex; align-items: center; justify-content: center; font-size: 64px; background: #fafafa; }
-    .item-body { padding: 14px; display: flex; flex-direction: column; gap: 8px; flex: 1; }
+    .item-img-placeholder { width: 100%; aspect-ratio: 4 / 3; display: flex; align-items: center; justify-content: center; font-size: 56px; background: radial-gradient(circle at 50% 45%, var(--surface-3), var(--surface-2)); }
+    .item-body { padding: 16px; display: flex; flex-direction: column; gap: 8px; flex: 1; }
     .item-badges { display: flex; gap: 5px; flex-wrap: wrap; }
-    .badge { font-size: 11px; border: 1px solid; border-radius: 999px; padding: 2px 8px; }
-    .badge-reserved { background: #f5f5f5; border-color: #ddd; color: #777; }
-    .item-name { font-size: 15px; font-weight: 600; line-height: 1.3; }
-    .item-desc { font-size: 13px; color: #666; line-height: 1.4; }
+    .badge { font-size: 10.5px; font-weight: 500; border: 1px solid var(--line); border-radius: 999px; padding: 3px 9px; }
+    .badge.p1 { background: var(--p1-soft); border-color: var(--p1-line); color: var(--p1-ink); }
+    .badge.p2 { background: var(--p2-soft); border-color: var(--p2-line); color: var(--p2-ink); }
+    .badge.p3 { background: var(--p3-soft); border-color: var(--p3-line); color: var(--p3-ink); }
+    .badge.p4 { background: var(--p4-soft); border-color: var(--p4-line); color: var(--p4-ink); }
+    .badge.p5 { background: var(--p5-soft); border-color: var(--p5-line); color: var(--p5-ink); }
+    .badge-reserved { background: var(--surface-3); border-color: var(--line-strong); color: var(--muted); }
+    .item-name { font-size: 16px; font-weight: 600; line-height: 1.3; letter-spacing: -0.01em; overflow-wrap: anywhere; text-wrap: balance; }
+    .item-desc { font-size: 13px; color: var(--ink-soft); line-height: 1.5; overflow-wrap: anywhere; }
     .item-desc.collapsed { display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
-    .btn-expand { font-size: 12px; color: #888; background: none; border: none; cursor: pointer; padding: 0; text-decoration: underline; align-self: flex-start; }
-    .item-price { font-size: 16px; font-weight: 600; color: #1a1a1a; }
-    .item-meta { font-size: 12px; color: #999; }
+    .btn-expand { font-size: 11.5px; color: var(--muted); background: none; border: none; cursor: pointer; padding: 0; text-decoration: underline; align-self: flex-start; }
+    .btn-expand:hover { color: var(--ink); }
+    .item-price { font-size: 17px; font-weight: 600; color: var(--ink); font-variant-numeric: tabular-nums; }
+    .item-meta { font-size: 11.5px; color: var(--muted); }
+    .item-meta.soft { color: var(--ink-soft); }
     .item-tags { display: flex; gap: 5px; flex-wrap: wrap; }
-    .tag { font-size: 11px; color: #7c3aed; background: #f5f0ff; border-radius: 4px; padding: 2px 6px; }
-    .item-actions { display: flex; gap: 7px; flex-wrap: wrap; margin-top: auto; padding-top: 4px; }
-    .btn-link { font-size: 12px; color: #1565c0; text-decoration: none; border: 1px solid #90caf9; border-radius: 6px; padding: 5px 10px; background: #e3f2fd; white-space: nowrap; }
-    .btn-link:hover { background: #bbdefb; }
-    .btn-reserve { font-size: 12px; background: #1a1a1a; color: #fff; border: none; border-radius: 6px; padding: 5px 12px; cursor: pointer; white-space: nowrap; }
-    .btn-reserve:hover { background: #333; }
-    .reserved-label { font-size: 12px; color: #888; padding: 5px 0; }
-    .btn-edit-item { font-size: 12px; background: #e3f2fd; color: #1565c0; border: 1px solid #90caf9; border-radius: 6px; padding: 4px 8px; cursor: pointer; }
-    .btn-del-item  { font-size: 12px; background: #fce4ec; color: #c62828; border: 1px solid #f48fb1; border-radius: 6px; padding: 4px 8px; cursor: pointer; }
-    .btn-unreserve { font-size: 11px; background: #fff3e0; color: #e65100; border: 1px solid #ffcc80; border-radius: 6px; padding: 4px 8px; cursor: pointer; }
-    .btn-add { background: #1a1a1a; color: #fff; border: none; border-radius: 8px; padding: 7px 16px; font-size: 13px; cursor: pointer; }
-    .btn-add:hover { background: #333; }
+    .tag { font-size: 10.5px; color: var(--ink-soft); background: var(--surface-3); border: 1px solid var(--line); border-radius: 5px; padding: 2px 6px; }
+    .item-actions { display: flex; gap: 7px; flex-wrap: wrap; margin-top: auto; padding-top: 6px; }
+    .btn-link { font-size: 11.5px; font-weight: 500; color: var(--ink-soft); text-decoration: none; border: 1px solid var(--line); border-radius: var(--radius-xs); padding: 6px 11px; background: var(--surface-2); white-space: nowrap; transition: background-color 0.15s, border-color 0.15s, color 0.15s; }
+    .btn-link:hover { border-color: var(--accent-line); background: var(--accent-soft); color: var(--accent-ink); }
+    .btn-reserve { font-size: 11.5px; font-weight: 600; background: var(--accent); color: var(--accent-contrast); border: 1px solid var(--accent); border-radius: var(--radius-xs); padding: 6px 12px; cursor: pointer; white-space: nowrap; transition: filter 0.15s; }
+    .btn-reserve:hover { filter: brightness(1.06); }
+    .reserved-label { font-size: 11.5px; color: var(--muted); padding: 6px 0; }
+    .btn-edit-item, .btn-del-item, .btn-unreserve { font-size: 11.5px; border-radius: var(--radius-xs); padding: 5px 9px; cursor: pointer; transition: filter 0.15s; }
+    .btn-edit-item { background: var(--info-soft); color: var(--info); border: 1px solid var(--info-line); }
+    .btn-del-item { background: var(--danger-soft); color: var(--danger); border: 1px solid var(--danger-line); }
+    .btn-unreserve { background: var(--warn-soft); color: var(--warn); border: 1px solid var(--warn-line); font-size: 11px; }
+    .btn-edit-res { background: var(--warn-soft); color: var(--warn); border-color: var(--warn-line); }
+    .btn-edit-item:hover, .btn-del-item:hover, .btn-unreserve:hover { filter: brightness(1.04); }
 
-    /* ── Modals ── */
-    .modal-bg { position: fixed; inset: 0; background: rgba(0,0,0,0.4); display: flex; align-items: center; justify-content: center; z-index: 100; padding: 1rem; overflow-y: auto; }
-    .modal { background: #fff; border-radius: 14px; padding: 1.5rem; width: 100%; max-width: 360px; }
-    .modal-wide { max-width: 480px; }
-    .modal h3 { font-size: 17px; font-weight: 600; margin-bottom: 4px; }
-    .modal-sub { font-size: 13px; color: #777; margin-bottom: 1rem; }
-    .modal input[type=text],
-    .modal input[type=url],
-    .modal input[type=number],
-    .modal textarea { width: 100%; border: 1px solid #ddd; border-radius: 8px; padding: 10px 12px; font-size: 14px; margin-bottom: 10px; outline: none; display: block; font: inherit; }
-    .modal input:focus, .modal textarea:focus { border-color: #90caf9; }
+    /* Modals */
+    .modal-bg { position: fixed; inset: 0; background: var(--overlay); display: flex; align-items: center; justify-content: center; z-index: 100; padding: 1rem; overflow-y: auto; }
+    .modal { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius-lg); padding: 22px; width: 100%; max-width: 380px; box-shadow: var(--shadow); max-height: calc(100vh - 2rem); overflow-y: auto; overscroll-behavior: contain; }
+    .modal-wide { max-width: 500px; }
+    .modal h3 { font-family: var(--font-display); font-size: 24px; font-weight: 500; line-height: 1.15; letter-spacing: -0.015em; margin-bottom: 4px; text-wrap: balance; }
+    .modal-sub { font-size: 12.5px; color: var(--muted); margin-bottom: 1rem; }
+    .modal input[type=text], .modal input[type=url], .modal input[type=number], .modal input[type=date], .modal textarea, .modal select { width: 100%; border: 1px solid var(--line); border-radius: var(--radius-sm); padding: 10px 12px; font-size: 14px; margin-bottom: 12px; background: var(--surface-2); color: var(--ink); display: block; transition: border-color 0.15s, box-shadow 0.15s; }
+    .modal input:focus, .modal textarea:focus, .modal select:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--focus-ring); }
     .modal textarea { min-height: 80px; resize: vertical; }
-    .modal-check { display: flex; align-items: flex-start; gap: 8px; font-size: 13px; color: #333; margin-bottom: 10px; cursor: pointer; }
-    .modal-check input { margin-top: 3px; flex-shrink: 0; }
-    .modal-hint { font-size: 12px; color: #aaa; margin-bottom: 10px; }
-    .modal-err { color: #e53935; font-size: 12px; margin-bottom: 8px; display: none; }
+    .modal-check { display: flex; align-items: flex-start; gap: 8px; font-size: 12.5px; color: var(--ink-soft); margin-bottom: 10px; cursor: pointer; line-height: 1.4; }
+    .modal-check input { margin-top: 3px; flex-shrink: 0; accent-color: var(--accent); }
+    .modal-hint { font-size: 11.5px; color: var(--muted); margin-bottom: 14px; line-height: 1.45; }
+    .modal-err { color: var(--danger); font-size: 12px; margin-bottom: 8px; display: none; }
     .modal-btns { display: flex; gap: 8px; justify-content: flex-end; margin-top: 4px; }
-    .btn-primary   { background: #1a1a1a; color: #fff; border: none; border-radius: 8px; padding: 9px 20px; font-size: 14px; cursor: pointer; }
-    .btn-primary:hover { background: #333; }
-    .btn-secondary { background: none; color: #777; border: 1px solid #ddd; border-radius: 8px; padding: 9px 16px; font-size: 14px; cursor: pointer; }
-    .modal-grid-2 { display: grid; grid-template-columns: 1fr 80px; gap: 8px; margin-bottom: 10px; }
+    .btn-primary { background: var(--accent); color: var(--accent-contrast); border: 1px solid var(--accent); border-radius: var(--radius-sm); padding: 9px 18px; font-size: 13.5px; font-weight: 600; cursor: pointer; transition: filter 0.15s; }
+    .btn-primary:hover { filter: brightness(1.06); }
+    .btn-secondary { background: transparent; color: var(--muted); border: 1px solid var(--line); border-radius: var(--radius-sm); padding: 9px 16px; font-size: 13.5px; cursor: pointer; transition: background-color 0.15s, border-color 0.15s, color 0.15s; }
+    .btn-secondary:hover { background: var(--surface-2); color: var(--ink); border-color: var(--line-strong); }
+    .modal-grid-2 { display: grid; grid-template-columns: 1fr 84px; gap: 8px; margin-bottom: 12px; }
     .modal-grid-2 input, .modal-grid-2 select { margin-bottom: 0; }
-    .field-select { width: 100%; border: 1px solid #ddd; border-radius: 8px; padding: 10px 12px; font-size: 14px; margin-bottom: 10px; outline: none; background: #fff; font: inherit; }
+    .date-field { width: 100%; border: 1px solid var(--line); border-radius: var(--radius-sm); padding: 9px 12px; font-size: 14px; background: var(--surface-2); color: var(--ink); margin-bottom: 10px; }
+    .date-wrap { margin-bottom: 10px; }
+    .date-wrap input { margin-bottom: 0; }
 
-    .loader { text-align: center; padding: 3rem; color: #aaa; font-size: 14px; }
+    .loader { text-align: center; padding: 3rem; color: var(--faint); font-size: 13px; }
 
+    @media (max-width: 720px) {
+      .page { padding: 1.5rem 1rem calc(4rem + env(safe-area-inset-bottom)); }
+      .header { grid-template-columns: 1fr; gap: 1rem; }
+      .header-btns { justify-content: flex-start; }
+      .header h1 { font-size: clamp(30px, 9vw, 40px); }
+      .items-grid { grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); }
+    }
     @media (max-width: 540px) {
       .items-grid { grid-template-columns: 1fr; }
       .filter-row { gap: 6px; }
+      .modal-grid-2 { grid-template-columns: 1fr 76px; }
     }
   </style>
 </head>
 <body>
+<a class="skip-link" href="#main">К содержанию</a>
 <div class="page">
 
-  <div id="gate">
-    <h2>🎁 Вишлист</h2>
-    <p>Введите пароль, чтобы открыть список</p>
-    <input id="gate-inp" type="password" placeholder="Пароль" autocomplete="current-password">
-    <div id="gate-err">Неверный пароль</div>
-    <button id="gate-btn">Войти</button>
-    <div class="gate-sep"><span>или</span></div>
-    <button id="gate-google-btn" class="gate-google" type="button">
-      <svg viewBox="0 0 48 48" aria-hidden="true"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>
-      Войти через Google
-    </button>
-    <div class="gate-hint">Только для админа — вход сохраняется навсегда</div>
-  </div>
-
-  <div id="root" style="display:none"><div class="loader">Загрузка...</div></div>
+  <main id="main" class="app-main" tabindex="-1">
+    <div id="root"><div class="loader">Загрузка…</div></div>
+  </main>
 
 </div>
 
@@ -152,7 +158,6 @@
 // ─────────────────────────────────────────
 // CONFIG
 // ─────────────────────────────────────────
-var GUEST_EMAIL = 'auth@fox-aoi.xyz';
 var ADMIN_UID = '4tQbxe4uHbeZ11apRGhBdl9UzSt2';
 
 firebase.initializeApp({
@@ -196,89 +201,19 @@ function saveMyReservations() {
 }
 
 var PRIORITIES = {
-  1: { label: 'Очень хочу',           color: '#fce4ec', border: '#f48fb1', text: '#c62828' },
-  2: { label: 'Было бы круто',        color: '#fff8e1', border: '#ffd54f', text: '#e65100' },
-  3: { label: 'Низкий приоритет',     color: '#e3f2fd', border: '#90caf9', text: '#1565c0' },
-  4: { label: 'Спонтанное желание',   color: '#f3e5f5', border: '#ce93d8', text: '#6a1b9a' },
-  5: { label: 'Мечта, когда-нибудь', color: '#eceff1', border: '#b0bec5', text: '#546e7a' }
+  1: { label: 'Очень хочу',           cls: 'p1' },
+  2: { label: 'Было бы круто',        cls: 'p2' },
+  3: { label: 'Низкий приоритет',     cls: 'p3' },
+  4: { label: 'Спонтанное желание',   cls: 'p4' },
+  5: { label: 'Мечта, когда-нибудь', cls: 'p5' }
 };
 
 // ─────────────────────────────────────────
-// GATE
+// BOOT
 // ─────────────────────────────────────────
-document.getElementById('gate-btn').addEventListener('click', checkGate);
-document.getElementById('gate-inp').addEventListener('keydown', function(e) {
-  if (e.key === 'Enter') checkGate();
-});
-document.getElementById('gate-google-btn').addEventListener('click', gateGoogleLogin);
-
-function gateError(message) {
-  var err = document.getElementById('gate-err');
-  err.textContent = message;
-  err.style.display = 'block';
-}
-
-function resetGate() {
-  document.getElementById('gate-err').style.display = 'none';
-  document.getElementById('gate-inp').style.borderColor = '#ddd';
-  var btn = document.getElementById('gate-btn');
-  btn.disabled = false;
-  btn.textContent = 'Войти';
-  document.getElementById('gate-google-btn').disabled = false;
-}
-
-function showGate() {
-  document.getElementById('root').style.display = 'none';
-  document.getElementById('gate').style.display = 'block';
-  setTimeout(function() { document.getElementById('gate-inp').focus(); }, 50);
-}
-
-function checkGate() {
-  var password = document.getElementById('gate-inp').value;
-  var btn = document.getElementById('gate-btn');
-  resetGate();
-  btn.disabled = true;
-  btn.textContent = '...';
-
-  firebase.auth().signInWithEmailAndPassword(GUEST_EMAIL, password)
-    .then(function() {
-      // сессию ведёт onAuthStateChanged ниже — persistence LOCAL держит вход
-      // после закрытия вкладки/браузера и перезагрузки
-      openApp();
-    })
-    .catch(function() {
-      gateError('Неверный пароль');
-      document.getElementById('gate-inp').style.borderColor = '#e53935';
-      btn.disabled = false;
-      btn.textContent = 'Войти';
-    });
-}
-
-function gateGoogleLogin() {
-  var btn = document.getElementById('gate-google-btn');
-  resetGate();
-  btn.disabled = true;
-
-  auth.signInWithPopup(new firebase.auth.GoogleAuthProvider())
-    .then(function(result) {
-      // через гейт пускаем только админа; остальные входят по паролю
-      if (result.user && result.user.uid === ADMIN_UID) {
-        openApp();
-        return;
-      }
-      return auth.signOut().then(function() {
-        gateError('Этот Google-аккаунт не админ. Войдите паролем.');
-        btn.disabled = false;
-      });
-    })
-    .catch(function(e) {
-      btn.disabled = false;
-      if (e && e.code !== 'auth/popup-closed-by-user') gateError('Не удалось войти через Google');
-    });
-}
-
+// Страница открыта всем: список и брони читаются публично.
+// Гость может забронировать подарок без входа; админ входит через Google.
 function openApp() {
-  document.getElementById('gate').style.display = 'none';
   document.getElementById('root').style.display = 'block';
   if (!fbStarted) {
     fbStarted = true;
@@ -287,27 +222,23 @@ function openApp() {
   }
 }
 
-// Держим вход постоянно: LOCAL-персистентность Firebase (переживает закрытие
-// вкладки/браузера и перезагрузку) + состояние берём из onAuthStateChanged,
-// а не из sessionStorage, чтобы сессия не слетала.
+// Держим вход админа постоянно: LOCAL-персистентность Firebase переживает
+// закрытие вкладки/браузера. Остальным вход не нужен — страница публичная.
 auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL)
   .catch(function() { /* приватный режим / нет IndexedDB — останется дефолтная персистентность */ })
   .then(function() {
     auth.onAuthStateChanged(function(user) {
-      // пускаем только гостевой аккаунт и админа — как в правилах БД
-      if (user && user.email !== GUEST_EMAIL && user.uid !== ADMIN_UID) {
+      currentUser = user;
+      // Вход нужен только админу: чужие Google-аккаунты сразу выходим.
+      if (user && !isAdmin()) {
         auth.signOut();
         return;
       }
-      currentUser = user;
-      if (user) {
-        openApp();
-        render();
-      } else {
-        showGate();
-      }
+      render();
     });
   });
+
+openApp();
 
 // ─────────────────────────────────────────
 // AUTH
@@ -390,9 +321,9 @@ function confirmEditReserve() {
   var itemId = editResModal.itemId;
   var existing = reservations[itemId] || {};
   var btn = document.getElementById('eres-save-btn');
-  if (btn) { btn.disabled = true; btn.textContent = '...'; }
+  if (btn) { btn.disabled = true; btn.setAttribute('aria-busy', 'true'); btn.textContent = 'Сохраняем…'; }
 
-  var data = { name: name, isAnonymous: isAnon, ts: existing.ts || Date.now() };
+  var data = { name: isAnon ? 'Аноним' : name, isAnonymous: isAnon, ts: existing.ts || Date.now() };
   if (comment)  data.comment  = comment;
   if (giftDate) data.giftDate = giftDate;
 
@@ -401,7 +332,7 @@ function confirmEditReserve() {
     .catch(function(e) {
       errEl.textContent = 'Ошибка: ' + e.message;
       errEl.style.display = 'block';
-      if (btn) { btn.disabled = false; btn.textContent = 'Сохранить'; }
+      if (btn) { btn.disabled = false; btn.removeAttribute('aria-busy'); btn.textContent = 'Сохранить'; }
     });
 }
 
@@ -426,11 +357,13 @@ function confirmReserve() {
 
   var itemId = reserveModal.itemId;
   var btn = document.querySelector('#res-err ~ div .btn-primary');
-  if (btn) { btn.disabled = true; btn.textContent = '...'; }
+  if (btn) { btn.disabled = true; btn.setAttribute('aria-busy', 'true'); btn.textContent = 'Отправляем…'; }
 
   db.ref('wishlist/reservations/' + itemId).transaction(function(current) {
     if (current !== null) return; // уже занято — отменяем
-    var data = { name: name, isAnonymous: isAnon, ts: Date.now() };
+    // Для анонимной брони не сохраняем настоящее имя: база публичная,
+    // а сюрприз должен сохраняться даже при чтении данных напрямую.
+    var data = { name: isAnon ? 'Аноним' : name, isAnonymous: isAnon, ts: Date.now() };
     if (comment)  data.comment  = comment;
     if (giftDate) data.giftDate = giftDate;
     return data;
@@ -447,7 +380,7 @@ function confirmReserve() {
   }).catch(function(e) {
     errEl.textContent = 'Ошибка: ' + e.message;
     errEl.style.display = 'block';
-    if (btn) { btn.disabled = false; btn.textContent = 'Забронировать'; }
+    if (btn) { btn.disabled = false; btn.removeAttribute('aria-busy'); btn.textContent = 'Забронировать'; }
   });
 }
 
@@ -457,6 +390,13 @@ function confirmReserve() {
 function openAddModal() { showAddModal = true; editItemData = null; render(); setTimeout(function() { var el = document.getElementById('add-name'); if (el) el.focus(); }, 50); }
 function openEditItem(id) { editItemData = Object.assign({ _id: id }, items[id]); showAddModal = false; render(); }
 function closeAddModal()  { showAddModal = false; editItemData = null; render(); }
+
+document.addEventListener('keydown', function(event) {
+  if (event.key !== 'Escape') return;
+  if (editResModal) { closeEditResModal(); return; }
+  if (reserveModal) { closeReserveModal(); return; }
+  if (showAddModal || editItemData) { closeAddModal(); }
+});
 
 function saveItem() {
   var nameVal = document.getElementById('add-name').value.trim();
@@ -482,7 +422,7 @@ function saveItem() {
   Object.keys(data).forEach(function(k) { if (data[k] === null) delete data[k]; });
 
   var saveBtn = document.getElementById('add-save-btn');
-  if (saveBtn) { saveBtn.disabled = true; saveBtn.textContent = '...'; }
+  if (saveBtn) { saveBtn.disabled = true; saveBtn.setAttribute('aria-busy', 'true'); saveBtn.textContent = 'Сохраняем…'; }
 
   var ref = editItemData
     ? db.ref('wishlist/items/' + editItemData._id)
@@ -493,7 +433,7 @@ function saveItem() {
     .catch(function(e) {
       errEl.textContent = 'Ошибка: ' + e.message;
       errEl.style.display = 'block';
-      if (saveBtn) { saveBtn.disabled = false; saveBtn.textContent = 'Сохранить'; }
+      if (saveBtn) { saveBtn.disabled = false; saveBtn.removeAttribute('aria-busy'); saveBtn.textContent = 'Сохранить'; }
     });
 }
 
@@ -513,11 +453,18 @@ function unreserveItem(id) {
 // ─────────────────────────────────────────
 function showToast(msg) {
   var t = document.createElement('div');
-  t.textContent = msg;
-  t.style.cssText = 'position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#1a1a1a;color:#fff;padding:10px 20px;border-radius:99px;font-size:14px;z-index:9999;pointer-events:none;opacity:0;transition:opacity 0.2s';
+  t.className = 'toast';
+  t.setAttribute('role', 'status');
+  t.setAttribute('aria-live', 'polite');
   document.body.appendChild(t);
-  setTimeout(function() { t.style.opacity = '1'; }, 10);
-  setTimeout(function() { t.style.opacity = '0'; setTimeout(function() { t.remove(); }, 300); }, 2500);
+  requestAnimationFrame(function() {
+    t.textContent = msg;
+    t.classList.add('show');
+  });
+  setTimeout(function() {
+    t.classList.remove('show');
+    setTimeout(function() { t.remove(); }, 300);
+  }, 2500);
 }
 
 // ─────────────────────────────────────────
@@ -553,21 +500,23 @@ function render() {
   html += '<div class="header">' +
     '<div class="header-left">' +
       '<a href="https://kkqr77.github.io/fox-aoi/" class="back-link">← Расписание</a>' +
-      '<h1>🎁 Вишлист</h1>' +
-      '<div class="header-sub">Список желаний и подарков, почему бы и нет..? для тех кто хочет что-то подарить, я перенёс список желаний и будущих покупок сюда, так что воть :P</div>' +
+      '<div class="eyebrow">Подарки</div>' +
+      '<h1>Список желаний</h1>' +
+      '<div class="header-sub">Вещи, которые обрадуют. Забронируйте подарок — я не увижу, кто что выбрал.</div>' +
     '</div>' +
     '<div class="header-btns">';
   if (isAdmin()) {
     html += '<button class="auth-btn logged" onclick="logout()">✓ ' + escapeHtml(currentUser.displayName || 'Ред. режим') + ' — выйти</button>';
   } else {
-    html += '<button class="auth-btn" onclick="login()">Вход для ред.</button>';
+    html += '<button class="auth-btn" onclick="login()">Вход для админа</button>';
   }
+  html += '<button class="theme-btn" type="button" aria-label="Переключить тему"></button>';
   html += '</div></div>';
 
   // ── Admin panel ──
   if (isAdmin()) {
     html += '<div class="admin-panel">' +
-      '<div><div style="font-size:14px;font-weight:500">Панель редактирования</div>' +
+      '<div><div class="admin-title">Панель редактирования</div>' +
       '<div class="admin-hint">Добавляйте и редактируйте товары в вишлисте</div></div>' +
       '<button class="btn-add" onclick="openAddModal()">+ Добавить товар</button>' +
     '</div>';
@@ -585,35 +534,38 @@ function render() {
 
   // Category + Sort row
   html += '<div class="filter-row">' +
-    '<span class="filter-label">Категория:</span>' +
-    '<select class="filter-select" onchange="setFilter(\'category\', this.value)">' +
-      '<option value="">Все</option>';
+    '<span class="filter-pair">' +
+      '<label class="filter-label" for="filter-category">Категория</label>' +
+      '<select id="filter-category" class="filter-select" onchange="setFilter(\'category\', this.value)">' +
+        '<option value="">Все</option>';
   cats.forEach(function(c) {
     html += '<option value="' + escapeHtml(c) + '"' + (filterCategory === c ? ' selected' : '') + '>' + escapeHtml(c) + '</option>';
   });
-  html += '</select>' +
-    '<span class="filter-label" style="margin-left:8px">Сорт.:</span>' +
-    '<select class="filter-select" onchange="setSort(this.value)">' +
-      '<option value="priority"'  + (sortBy==='priority'  ? ' selected':'') + '>По приоритету</option>' +
-      '<option value="price_asc"' + (sortBy==='price_asc' ? ' selected':'') + '>Дешевле</option>' +
-      '<option value="price_desc"'+ (sortBy==='price_desc'? ' selected':'') + '>Дороже</option>' +
-      '<option value="newest"'    + (sortBy==='newest'    ? ' selected':'') + '>Новые</option>' +
-    '</select>' +
+  html += '</select></span>' +
+    '<span class="filter-pair">' +
+      '<label class="filter-label" for="filter-sort">Сортировка</label>' +
+      '<select id="filter-sort" class="filter-select" onchange="setSort(this.value)">' +
+        '<option value="priority"'  + (sortBy==='priority'  ? ' selected':'') + '>По приоритету</option>' +
+        '<option value="price_asc"' + (sortBy==='price_asc' ? ' selected':'') + '>Дешевле</option>' +
+        '<option value="price_desc"'+ (sortBy==='price_desc'? ' selected':'') + '>Дороже</option>' +
+        '<option value="newest"'    + (sortBy==='newest'    ? ' selected':'') + '>Новые</option>' +
+      '</select>' +
+    '</span>' +
   '</div>';
 
   // Priority pills
-  html += '<div class="filter-row"><span class="filter-label">Приоритет:</span>';
-  html += '<button class="pill' + (filterPriority===0?' active':'') + '" onclick="setFilter(\'priority\',0)">Все</button>';
+  html += '<div class="filter-row"><span class="filter-label">Приоритет</span>';
+  html += '<button class="pill' + (filterPriority===0?' active':'') + '" aria-pressed="' + (filterPriority===0) + '" onclick="setFilter(\'priority\',0)">Все</button>';
   [1,2,3,4,5].forEach(function(p) {
-    html += '<button class="pill p' + p + (filterPriority===p?' active':'') + '" onclick="setFilter(\'priority\',' + p + ')">' + PRIORITIES[p].label + '</button>';
+    html += '<button class="pill p' + p + (filterPriority===p?' active':'') + '" aria-pressed="' + (filterPriority===p) + '" onclick="setFilter(\'priority\',' + p + ')">' + PRIORITIES[p].label + '</button>';
   });
   html += '</div>';
 
   // Status pills
-  html += '<div class="filter-row"><span class="filter-label">Статус:</span>' +
-    '<button class="pill' + (filterStatus==='all'     ?' active':'') + '" onclick="setFilter(\'status\',\'all\')">Все</button>' +
-    '<button class="pill' + (filterStatus==='free'    ?' active':'') + '" onclick="setFilter(\'status\',\'free\')">Свободно</button>' +
-    '<button class="pill' + (filterStatus==='reserved'?' active':'') + '" onclick="setFilter(\'status\',\'reserved\')">Забронировано</button>' +
+  html += '<div class="filter-row"><span class="filter-label">Статус</span>' +
+    '<button class="pill' + (filterStatus==='all'     ?' active':'') + '" aria-pressed="' + (filterStatus==='all') + '" onclick="setFilter(\'status\',\'all\')">Все</button>' +
+    '<button class="pill' + (filterStatus==='free'    ?' active':'') + '" aria-pressed="' + (filterStatus==='free') + '" onclick="setFilter(\'status\',\'free\')">Свободно</button>' +
+    '<button class="pill' + (filterStatus==='reserved'?' active':'') + '" aria-pressed="' + (filterStatus==='reserved') + '" onclick="setFilter(\'status\',\'reserved\')">Забронировано</button>' +
   '</div>';
 
   html += '</div>'; // end filters
@@ -642,9 +594,9 @@ function render() {
 
   if (list.length === 0) {
     if (Object.keys(items).length === 0) {
-      html += '<div class="empty-state">Вишлист пока пуст' + (isAdmin() ? ' — добавьте первый товар!' : ' 🎁') + '</div>';
+      html += '<div class="empty-state">' + (isAdmin() ? 'Список пока пуст — добавьте первый товар.' : 'Список пока пуст. Загляните позже.') + '</div>';
     } else {
-      html += '<div class="empty-state">Ничего не найдено по выбранным фильтрам</div>';
+      html += '<div class="empty-state">По выбранным фильтрам ничего нет.</div>';
     }
   } else {
     html += '<div class="items-grid">';
@@ -657,11 +609,11 @@ function render() {
   // ── Reserve modal ──
   if (reserveModal) {
     html += '<div class="modal-bg" onclick="if(event.target===this)closeReserveModal()">' +
-      '<div class="modal">' +
-        '<h3>Забронировать подарок</h3>' +
+      '<div class="modal" role="dialog" aria-modal="true" aria-labelledby="reserve-title">' +
+        '<h3 id="reserve-title">Забронировать подарок</h3>' +
         '<div class="modal-sub">' + escapeHtml(reserveModal.itemName) + '</div>' +
-        '<input id="res-name" type="text" placeholder="Ваше имя *" maxlength="40">' +
-        '<textarea id="res-comment" placeholder="Комментарий (необязательно)" maxlength="200"></textarea>' +
+        '<input id="res-name" type="text" placeholder="Ваше имя *" aria-label="Ваше имя" maxlength="40">' +
+        '<textarea id="res-comment" placeholder="Комментарий (необязательно)" aria-label="Комментарий" maxlength="200"></textarea>' +
         '<label class="modal-check">' +
           '<input id="res-confirm" type="checkbox">' +
           '<span>Я подтверждаю, что хочу подарить этот товар</span>' +
@@ -670,14 +622,14 @@ function render() {
           '<input id="res-date-toggle" type="checkbox" onchange="toggleResDate(this)">' +
           '<span>Хочу указать примерную дату вручения подарка</span>' +
         '</label>' +
-        '<div id="res-date-wrap" style="display:none;margin-bottom:10px">' +
-          '<input id="res-date" type="date" style="width:100%;border:1px solid #ddd;border-radius:8px;padding:9px 12px;font-size:14px;outline:none;font:inherit">' +
+        '<div id="res-date-wrap" class="date-wrap" style="display:none">' +
+          '<input id="res-date" type="date" aria-label="Дата вручения">' +
         '</div>' +
         '<label class="modal-check">' +
           '<input id="res-anon" type="checkbox">' +
           '<span>Анонимная бронь — скрыть моё имя от других</span>' +
         '</label>' +
-        '<div id="res-err" class="modal-err"></div>' +
+        '<div id="res-err" class="modal-err" role="alert"></div>' +
         '<div class="modal-hint">После бронирования другие увидят, что товар занят, но не кем.</div>' +
         '<div class="modal-btns">' +
           '<button class="btn-secondary" onclick="closeReserveModal()">Отмена</button>' +
@@ -690,23 +642,23 @@ function render() {
   if (editResModal) {
     var eRes = reservations[editResModal.itemId] || {};
     html += '<div class="modal-bg" onclick="if(event.target===this)closeEditResModal()">' +
-      '<div class="modal">' +
-        '<h3>Изменить бронь</h3>' +
+      '<div class="modal" role="dialog" aria-modal="true" aria-labelledby="eres-title">' +
+        '<h3 id="eres-title">Изменить бронь</h3>' +
         '<div class="modal-sub">' + escapeHtml((items[editResModal.itemId] || {}).name || '') + '</div>' +
-        '<input id="eres-name" type="text" placeholder="Ваше имя *" maxlength="40" value="' + attrSafe(eRes.name || '') + '">' +
-        '<textarea id="eres-comment" placeholder="Комментарий (необязательно)" maxlength="200">' + escapeHtml(eRes.comment || '') + '</textarea>' +
+        '<input id="eres-name" type="text" placeholder="Ваше имя *" aria-label="Ваше имя" maxlength="40" value="' + attrSafe(eRes.name || '') + '">' +
+        '<textarea id="eres-comment" placeholder="Комментарий (необязательно)" aria-label="Комментарий" maxlength="200">' + escapeHtml(eRes.comment || '') + '</textarea>' +
         '<label class="modal-check">' +
           '<input id="eres-date-toggle" type="checkbox"' + (eRes.giftDate ? ' checked' : '') + ' onchange="toggleEresDate(this)">' +
           '<span>Указать примерную дату вручения</span>' +
         '</label>' +
-        '<div id="eres-date-wrap" style="display:' + (eRes.giftDate ? 'block' : 'none') + ';margin-bottom:10px">' +
-          '<input id="eres-date" type="date" value="' + attrSafe(eRes.giftDate || '') + '" style="width:100%;border:1px solid #ddd;border-radius:8px;padding:9px 12px;font-size:14px;outline:none;font:inherit">' +
+        '<div id="eres-date-wrap" class="date-wrap" style="display:' + (eRes.giftDate ? 'block' : 'none') + '">' +
+          '<input id="eres-date" type="date" aria-label="Дата вручения" value="' + attrSafe(eRes.giftDate || '') + '">' +
         '</div>' +
         '<label class="modal-check">' +
           '<input id="eres-anon" type="checkbox"' + (eRes.isAnonymous ? ' checked' : '') + '>' +
           '<span>Анонимная бронь</span>' +
         '</label>' +
-        '<div id="eres-err" class="modal-err"></div>' +
+        '<div id="eres-err" class="modal-err" role="alert"></div>' +
         '<div class="modal-btns">' +
           '<button class="btn-secondary" onclick="closeEditResModal()">Отмена</button>' +
           '<button id="eres-save-btn" class="btn-primary" onclick="confirmEditReserve()">Сохранить</button>' +
@@ -719,31 +671,31 @@ function render() {
     var it = editItemData || {};
     var modalTitle = editItemData ? 'Редактировать товар' : 'Добавить товар';
     html += '<div class="modal-bg" onclick="if(event.target===this)closeAddModal()">' +
-      '<div class="modal modal-wide">' +
-        '<h3>' + modalTitle + '</h3>' +
-        '<input id="add-name" type="text" placeholder="Название *" maxlength="100" value="' + attrSafe(it.name || '') + '">' +
-        '<textarea id="add-desc" placeholder="Описание (необязательно)" maxlength="500">' + escapeHtml(it.description || '') + '</textarea>' +
-        '<input id="add-url" type="url" placeholder="Ссылка на магазин" value="' + attrSafe(it.url || '') + '">' +
+      '<div class="modal modal-wide" role="dialog" aria-modal="true" aria-labelledby="add-item-title">' +
+        '<h3 id="add-item-title">' + modalTitle + '</h3>' +
+        '<input id="add-name" type="text" placeholder="Название *" aria-label="Название" maxlength="100" value="' + attrSafe(it.name || '') + '">' +
+        '<textarea id="add-desc" placeholder="Описание (необязательно)" aria-label="Описание" maxlength="500">' + escapeHtml(it.description || '') + '</textarea>' +
+        '<input id="add-url" type="url" placeholder="Ссылка на магазин" aria-label="Ссылка на магазин" value="' + attrSafe(it.url || '') + '">' +
         '<div class="modal-grid-2">' +
-          '<input id="add-price" type="number" min="0" placeholder="Цена" style="border:1px solid #ddd;border-radius:8px;padding:10px 12px;font-size:14px;outline:none;font:inherit" value="' + (it.price || '') + '">' +
-          '<select id="add-currency" style="border:1px solid #ddd;border-radius:8px;padding:10px 8px;font-size:14px;outline:none;background:#fff">' +
+          '<input id="add-price" type="number" min="0" placeholder="Цена" aria-label="Цена" value="' + (it.price || '') + '">' +
+          '<select id="add-currency" aria-label="Валюта">' +
             '<option value="₽"' + ((!it.currency || it.currency==='₽') ? ' selected':'') + '>₽</option>' +
             '<option value="$"' + (it.currency==='$' ? ' selected':'') + '>$</option>' +
             '<option value="€"' + (it.currency==='€' ? ' selected':'') + '>€</option>' +
             '<option value="¥"' + (it.currency==='¥' ? ' selected':'') + '>¥</option>' +
           '</select>' +
         '</div>' +
-        '<input id="add-img" type="url" placeholder="Ссылка на картинку товара" value="' + attrSafe(it.imageUrl || '') + '">' +
-        '<input id="add-category" type="text" placeholder="Категория (Игры, Техника, Аниме...)" maxlength="40" value="' + attrSafe(it.category || '') + '">' +
-        '<select id="add-priority" class="field-select">' +
+        '<input id="add-img" type="url" placeholder="Ссылка на картинку товара" aria-label="Ссылка на картинку" value="' + attrSafe(it.imageUrl || '') + '">' +
+        '<input id="add-category" type="text" placeholder="Категория (Игры, Техника, Аниме…)" aria-label="Категория" maxlength="40" value="' + attrSafe(it.category || '') + '">' +
+        '<select id="add-priority" aria-label="Приоритет">' +
           '<option value="1"' + ((it.priority||1)===1 ? ' selected':'') + '>⭐⭐⭐ Очень хочу</option>' +
           '<option value="2"' + ((it.priority||1)===2 ? ' selected':'') + '>⭐⭐ Было бы круто</option>' +
           '<option value="3"' + ((it.priority||1)===3 ? ' selected':'') + '>⭐ Низкий приоритет</option>' +
           '<option value="4"' + ((it.priority||1)===4 ? ' selected':'') + '>✨ Спонтанное желание</option>' +
           '<option value="5"' + ((it.priority||1)===5 ? ' selected':'') + '>💭 Мечта, когда-нибудь</option>' +
         '</select>' +
-        '<input id="add-tags" type="text" placeholder="Теги через запятую: gaming, anime, pc..." maxlength="200" value="' + attrSafe(it.tags || '') + '">' +
-        '<div id="add-err" class="modal-err"></div>' +
+        '<input id="add-tags" type="text" placeholder="Теги через запятую: gaming, anime, pc…" aria-label="Теги" maxlength="200" value="' + attrSafe(it.tags || '') + '">' +
+        '<div id="add-err" class="modal-err" role="alert"></div>' +
         '<div class="modal-btns">' +
           '<button class="btn-secondary" onclick="closeAddModal()">Отмена</button>' +
           '<button id="add-save-btn" class="btn-primary" onclick="saveItem()">Сохранить</button>' +
@@ -752,6 +704,7 @@ function render() {
   }
 
   root.innerHTML = html;
+  if (window.updateThemeButtons) window.updateThemeButtons();
 }
 
 // ─────────────────────────────────────────
@@ -767,14 +720,19 @@ function renderCard(id, item) {
   var isExpanded = !!expandedDescs[id];
   // Emoji-детектор: если imageUrl не содержит "://" — это смайл/текст, не URL
   var imgIsEmoji = item.imageUrl && item.imageUrl.indexOf('://') === -1;
+  var name = item.name || 'Товар';
 
-  var html = '<div class="item-card' + (reserved ? ' reserved' : '') + '">';
+  var html = '<article class="item-card' + (reserved ? ' reserved' : '') + '" aria-labelledby="item-name-' + id + '">';
 
   // Image / emoji / placeholder
   if (item.imageUrl && !imgIsEmoji) {
-    html += '<div class="item-img-wrap"><img class="item-img" src="' + attrSafe(item.imageUrl) + '" alt="" loading="lazy" onerror="this.closest(\'.item-img-wrap\').style.display=\'none\'"></div>';
+    html += '<div class="item-img-wrap">' +
+      '<img class="item-img" src="' + attrSafe(item.imageUrl) + '" alt="' + attrSafe(name) + '"' +
+      ' width="400" height="300" loading="lazy" decoding="async"' +
+      ' onerror="this.closest(\'.item-img-wrap\').style.display=\'none\'">' +
+      '</div>';
   } else {
-    html += '<div class="item-img-placeholder">' + escapeHtml(item.imageUrl || '🎁') + '</div>';
+    html += '<div class="item-img-placeholder" aria-hidden="true">' + escapeHtml(item.imageUrl || '🎁') + '</div>';
   }
 
   html += '<div class="item-body">';
@@ -782,7 +740,7 @@ function renderCard(id, item) {
   // Badges
   html += '<div class="item-badges">';
   if (pri) {
-    html += '<span class="badge" style="background:' + pri.color + ';border-color:' + pri.border + ';color:' + pri.text + '">' + pri.label + '</span>';
+    html += '<span class="badge ' + pri.cls + '">' + pri.label + '</span>';
   }
   if (reserved) {
     html += '<span class="badge badge-reserved">🔒 Занято</span>';
@@ -790,14 +748,15 @@ function renderCard(id, item) {
   html += '</div>';
 
   // Name
-  html += '<div class="item-name">' + escapeHtml(item.name) + '</div>';
+  html += '<h2 class="item-name" id="item-name-' + id + '">' + escapeHtml(name) + '</h2>';
 
   // Description с expand
   if (item.description) {
     var longDesc = item.description.length > 120;
-    html += '<div id="desc-' + id + '" class="item-desc' + (longDesc && !isExpanded ? ' collapsed' : '') + '">' + escapeHtml(item.description) + '</div>';
+    html += '<p id="desc-' + id + '" class="item-desc' + (longDesc && !isExpanded ? ' collapsed' : '') + '">' + escapeHtml(item.description) + '</p>';
     if (longDesc) {
-      html += '<button class="btn-expand" onclick="toggleDesc(\'' + id + '\')">' + (isExpanded ? '▲ Свернуть' : '▼ Читать далее') + '</button>';
+      html += '<button class="btn-expand" type="button" aria-expanded="' + isExpanded + '" aria-controls="desc-' + id + '" onclick="toggleDesc(\'' + id + '\')">' +
+        (isExpanded ? '▲ Свернуть' : '▼ Читать далее') + '</button>';
     }
   }
 
@@ -826,11 +785,11 @@ function renderCard(id, item) {
     if (res.giftDate) {
       var d = new Date(res.giftDate);
       var dateStr = d.toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' });
-      html += '<div class="item-meta" style="color:#888">🗓 Примерно: ' + escapeHtml(dateStr) + '</div>';
+      html += '<div class="item-meta soft">🗓 Примерно: ' + escapeHtml(dateStr) + '</div>';
     }
     // Имя бронирующего — только не-анонимные, только не хозяину
     if (!res.isAnonymous && !isAdmin()) {
-      html += '<div class="item-meta" style="color:#555">Бронь: ' + escapeHtml(res.name) + (res.comment ? ' · ' + escapeHtml(res.comment) : '') + '</div>';
+      html += '<div class="item-meta">Бронь: ' + escapeHtml(res.name) + (res.comment ? ' · ' + escapeHtml(res.comment) : '') + '</div>';
     }
   }
 
@@ -841,22 +800,22 @@ function renderCard(id, item) {
     html += '<a class="btn-link" href="' + attrSafe(linkUrl) + '" target="_blank" rel="noopener noreferrer">Посмотреть →</a>';
   }
   if (!reserved) {
-    html += '<button class="btn-reserve" onclick="openReserveModal(\'' + id + '\')">🎁 Забронировать</button>';
+    html += '<button class="btn-reserve" type="button" onclick="openReserveModal(\'' + id + '\')">🎁 Забронировать</button>';
   } else if (!isAdmin()) {
     html += '<span class="reserved-label">Занято</span>';
   }
   if (isAdmin()) {
-    html += '<button class="btn-edit-item" onclick="openEditItem(\'' + id + '\')">✏️</button>';
-    html += '<button class="btn-del-item"  onclick="deleteItem(\'' + id + '\')">🗑</button>';
+    html += '<button class="btn-edit-item" type="button" onclick="openEditItem(\'' + id + '\')" aria-label="Редактировать товар" title="Редактировать">✏️</button>';
+    html += '<button class="btn-del-item" type="button" onclick="deleteItem(\'' + id + '\')" aria-label="Удалить товар" title="Удалить">🗑</button>';
     if (reserved) {
-      html += '<button class="btn-unreserve" onclick="unreserveItem(\'' + id + '\')">Снять бронь</button>';
-      html += '<button class="btn-edit-item" onclick="openEditResModal(\'' + id + '\')" style="background:#fff3e0;color:#e65100;border-color:#ffcc80">✏️ Бронь</button>';
+      html += '<button class="btn-unreserve" type="button" onclick="unreserveItem(\'' + id + '\')">Снять бронь</button>';
+      html += '<button class="btn-edit-item btn-edit-res" type="button" onclick="openEditResModal(\'' + id + '\')" aria-label="Редактировать бронь" title="Редактировать бронь">✏️ Бронь</button>';
     }
   }
   html += '</div>';
 
   html += '</div>'; // item-body
-  html += '</div>'; // item-card
+  html += '</article>'; // item-card
   return html;
 }
 
