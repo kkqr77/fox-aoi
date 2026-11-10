@@ -31,8 +31,9 @@
     .header p { font-size: 13px; color: #888; line-height: 1.45; margin-top: 4px; }
     .header-lead { max-width: 52ch; }
     .header-note { font-size: 12px; color: #999; margin-top: 6px; }
-    .header-tz { display: inline-flex; align-items: center; margin-top: 8px; padding: 3px 10px; border-radius: 999px; background: #fff; border: 1px solid #e8e8e8; color: #777; font-size: 11px; line-height: 1.4; }
+    .header-tz { display: inline-block; max-width: 100%; margin-top: 8px; padding: 3px 10px; border-radius: 999px; background: #fff; border: 1px solid #e8e8e8; color: #777; font-size: 11px; line-height: 1.45; }
     .header-tz b { font-weight: 500; color: #555; }
+    .header-tz .tz-viewer { color: #999; }
     .header-actions { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
     .auth-btn { padding: 6px 12px; border-radius: 8px; border: 1px solid #ddd; background: #fff; font-size: 13px; color: #555; cursor: pointer; white-space: nowrap; flex-shrink: 0; max-width: 100%; overflow: hidden; text-overflow: ellipsis; }
     .auth-btn:hover { background: #f0f0f0; }
@@ -173,6 +174,10 @@
     .modal-check { display: flex; align-items: flex-start; gap: 8px; font-size: 13px; color: #555; margin-bottom: 8px; }
     .modal-check input { margin-top: 2px; }
     .modal-hint { font-size: 12px; color: #999; margin-bottom: 12px; }
+    .tz-convert { font-size: 12px; color: #777; background: #f7f9fc; border: 1px solid #e8eef5; border-radius: 8px; padding: 7px 9px; margin: -4px 0 12px; line-height: 1.5; }
+    .tz-convert:empty { display: none; }
+    .tz-convert .tz-base { display: block; color: #777; }
+    .tz-convert .tz-local { display: block; color: #1565c0; font-weight: 500; }
     .modal-btns { display: flex; gap: 8px; justify-content: flex-end; }
     .btn-primary { background: #1a1a1a; color: #fff; border: none; border-radius: 8px; padding: 9px 18px; font-size: 14px; cursor: pointer; }
     .btn-secondary { background: none; color: #777; border: 1px solid #ddd; border-radius: 8px; padding: 9px 18px; font-size: 14px; cursor: pointer; }
@@ -234,6 +239,9 @@ var DEFAULT_DURATION_MIN = 60;
 var MIN_BOOKING_MINUTES  = 20;
 var SUGGESTION_STEP_MIN  = 20;
 var TIMELINE_HEIGHT_PX   = 864;
+
+// Базовый часовой пояс календаря: Екатеринбург, UTC+5, без перехода на летнее время.
+var BASE_TZ_OFFSET_MIN = 5 * 60;
 
 // ============================================================
 // Firebase
@@ -357,6 +365,9 @@ function openApp() {
   }
 }
 
+// Плашка часового пояса обновляется каждые 15 секунд.
+setInterval(renderTzBadge, 15000);
+
 // Держим вход постоянно: LOCAL-персистентность Firebase (переживает закрытие
 // вкладки/браузера и перезагрузку) + состояние берём из onAuthStateChanged,
 // а не из sessionStorage, чтобы сессия не слетала.
@@ -478,15 +489,113 @@ function formatMinutes(minutes) {
 function roundUpMinutes(minutes, step) {
   return Math.ceil(minutes / step) * step;
 }
-function getNowMinutes() {
+
+// ============================================================
+// Timezone helpers
+// Сетка и брони хранятся в настенном времени Екатеринбурга (UTC+5).
+// ============================================================
+// Date, у которого локальные getHours/getDate показывают время Екатеринбурга.
+function getBaseNow() {
   var now = new Date();
+  return new Date(now.getTime() + (BASE_TZ_OFFSET_MIN + now.getTimezoneOffset()) * 60000);
+}
+function getViewerOffsetMin() {
+  return -new Date().getTimezoneOffset();
+}
+function formatUtcOffset(offsetMin) {
+  var sign = offsetMin < 0 ? '-' : '+';
+  var abs = Math.abs(offsetMin);
+  var hrs = Math.floor(abs / 60);
+  var mins = abs % 60;
+  return 'UTC' + sign + hrs + (mins ? ':' + pad(mins) : '');
+}
+function formatLocalTime(d) {
+  return pad(d.getHours()) + ':' + pad(d.getMinutes());
+}
+function formatShortDate(d) {
+  return d.getDate() + ' ' + MONTHS[d.getMonth()];
+}
+// Переводит екатеринбургские дату и минуты от полуночи в Date зрителя.
+function baseDateTimeToLocal(dateStr, minutes) {
+  var parts = dateStr.split('-');
+  var utcMs = Date.UTC(
+    parseInt(parts[0], 10),
+    parseInt(parts[1], 10) - 1,
+    parseInt(parts[2], 10),
+    0, 0, 0, 0
+  ) + (minutes - BASE_TZ_OFFSET_MIN) * 60000;
+  return new Date(utcMs);
+}
+// Локальный интервал зрителя; дата добавляется, если она отличается от базовой.
+function formatLocalRange(baseDate, startMin, endMin) {
+  var start = baseDateTimeToLocal(baseDate, startMin);
+  var end = baseDateTimeToLocal(baseDate, endMin);
+  var startKey = dateKey(start);
+  var endKey = dateKey(end);
+  var text = '';
+  if (startKey !== baseDate) text += formatShortDate(start) + ', ';
+  text += formatLocalTime(start) + '–';
+  if (endKey !== startKey) text += formatShortDate(end) + ', ';
+  text += formatLocalTime(end);
+  return text;
+}
+function getTzConversionHtml(baseDate, startMin, endMin) {
+  var viewerOffset = getViewerOffsetMin();
+  if (viewerOffset === BASE_TZ_OFFSET_MIN) return '';
+  if (!baseDate || !/^\d{4}-\d{2}-\d{2}$/.test(baseDate)) return '';
+  if (startMin === null || endMin === null) return '';
+  if (endMin < startMin) endMin += 1440;
+  if (endMin - startMin <= 0) return '';
+  var baseEnd = endMin >= 1440 ? formatMinutes(endMin - 1440) + ' (след. день)' : formatMinutes(endMin);
+  var baseText = formatMinutes(startMin) + '–' + baseEnd;
+  var localText = formatLocalRange(baseDate, startMin, endMin);
+  return '<span class="tz-base">По Екатеринбургу: ' + escapeHtml(baseText) + '</span>' +
+    '<span class="tz-local">У вас: ' + escapeHtml(localText) + ' (' + escapeHtml(formatUtcOffset(viewerOffset)) + ')</span>';
+}
+function renderTzBadge() {
+  var el = document.getElementById('tz-badge');
+  if (!el) return;
+  var base = getBaseNow();
+  var text = 'Время по Екатеринбургу: <b>' + formatLocalTime(base) + '</b>';
+  var viewerOffset = getViewerOffsetMin();
+  if (viewerOffset !== BASE_TZ_OFFSET_MIN) {
+    text += ' <span class="tz-viewer">· у вас ' + formatLocalTime(new Date()) +
+      ' (' + formatUtcOffset(viewerOffset) + ')</span>';
+  }
+  el.innerHTML = text;
+}
+function updateBookingTzHint() {
+  var el = document.getElementById('booking-tz-hint');
+  if (!el || !modal) return;
+  var startInp = document.getElementById('start-inp');
+  var endInp = document.getElementById('end-inp');
+  el.innerHTML = getTzConversionHtml(
+    modal.dateStr,
+    parseTimeToMinutes(startInp ? startInp.value : ''),
+    parseTimeToMinutes(endInp ? endInp.value : '')
+  );
+}
+function updateEditTzHint() {
+  var el = document.getElementById('edit-tz-hint');
+  if (!el || !editModal) return;
+  var dateInp = document.getElementById('edit-date-inp');
+  var startInp = document.getElementById('edit-start-inp');
+  var endInp = document.getElementById('edit-end-inp');
+  el.innerHTML = getTzConversionHtml(
+    dateInp ? dateInp.value : editModal.date,
+    parseTimeToMinutes(startInp ? startInp.value : ''),
+    parseTimeToMinutes(endInp ? endInp.value : '')
+  );
+}
+function getNowMinutes() {
+  var now = getBaseNow();
   return now.getHours() * 60 + now.getMinutes();
 }
 function isPastDate(dateStr) {
-  return dateStr < dateKey(new Date());
+  return dateStr < dateKey(getBaseNow());
 }
 function isTodayKey(dateStr) {
-  return dateStr === dateKey(new Date());
+  return dateStr === dateKey(getBaseNow());
 }
 function escapeHtml(value) {
   return String(value || '').replace(/[&<>"']/g, function(ch) {
@@ -852,7 +961,7 @@ function getTimelineSegments(dateStr) {
   return segments;
 }
 function findNextAvailableDate(daysAhead) {
-  var start = new Date();
+  var start = getBaseNow();
   start.setHours(0, 0, 0, 0);
   for (var i = 0; i < daysAhead; i++) {
     var d = new Date(start);
@@ -1203,10 +1312,10 @@ function deleteSleep(dateStr) {
 // ============================================================
 // Helpers
 // ============================================================
-function isToday(d) { return dateKey(d) === dateKey(new Date()); }
+function isToday(d) { return dateKey(d) === dateKey(getBaseNow()); }
 function isBookingPast(b) {
   var endDate = getBookingEndDate(b);
-  return endDate < dateKey(new Date());
+  return endDate < dateKey(getBaseNow());
 }
 function toggleAdminView(v) { adminView = v; render(); }
 
@@ -1218,7 +1327,7 @@ function render() {
   if (!root || root.style.display === 'none') return;
   ensureSelectedDate();
 
-  var monthBase = new Date();
+  var monthBase = getBaseNow();
   monthBase = new Date(monthBase.getFullYear(), monthBase.getMonth() + monthOffset, 1);
   var monthStart = new Date(monthBase.getFullYear(), monthBase.getMonth(), 1);
   var monthEnd = new Date(monthBase.getFullYear(), monthBase.getMonth() + 1, 0);
@@ -1247,7 +1356,7 @@ function render() {
   '<h1>Когда я обычно свободен</h1>' +
   '<p class="header-lead">Примерный график, чтобы проще пересекаться.</p>' +
   '<p class="header-note">Не строгая запись — можно написать и вне слотов :)</p>' +
-  '<p class="header-tz"><b>Екатеринбург</b> · GMT+5 · МСК+2</p>' +
+  '<p class="header-tz" id="tz-badge">Время по Екатеринбургу</p>' +
   '</div>';
   html += '<div class="header-actions">';
   html += '<a href="https://kkqr77.github.io/fox-aoi/wishlist/" style="text-decoration:none;"><button class="auth-btn" style="background:#f5f0ff;border-color:#d8b4fe;color:#7c3aed;white-space:nowrap">🎁 Вишлист</button></a>';
@@ -1469,11 +1578,12 @@ function render() {
       '<div class="modal"><h3>Редактировать заявку</h3>' +
       '<p style="margin-bottom:8px">Изменение данных заявки</p>' +
       '<label style="font-size:12px;color:#777;display:block;margin-bottom:4px">Дата</label>' +
-      '<input id="edit-date-inp" type="date" style="width:100%;border:1px solid #ddd;border-radius:8px;padding:10px 12px;font-size:15px;margin-bottom:12px;outline:none;display:block;font:inherit" value="' + escapeHtml(editModal.date) + '">' +
+      '<input id="edit-date-inp" type="date" style="width:100%;border:1px solid #ddd;border-radius:8px;padding:10px 12px;font-size:15px;margin-bottom:12px;outline:none;display:block;font:inherit" value="' + escapeHtml(editModal.date) + '" oninput="updateEditTzHint()">' +
       '<div class="modal-times">' +
-      '<label>Начало<input id="edit-start-inp" type="time" step="300" value="' + escapeHtml(editModal.startTime) + '"></label>' +
-      '<label>Конец<input id="edit-end-inp" type="time" step="300" value="' + escapeHtml(editModal.endTime) + '"></label>' +
+      '<label>Начало<input id="edit-start-inp" type="time" step="300" value="' + escapeHtml(editModal.startTime) + '" oninput="updateEditTzHint()"></label>' +
+      '<label>Конец<input id="edit-end-inp" type="time" step="300" value="' + escapeHtml(editModal.endTime) + '" oninput="updateEditTzHint()"></label>' +
       '</div>' +
+      '<div class="tz-convert" id="edit-tz-hint"></div>' +
       '<input id="edit-name-inp" type="text" placeholder="Имя" maxlength="40" value="' + escapeHtml(editModal.name) + '">' +
       '<textarea id="edit-activity-inp" placeholder="Что хочет поделать" maxlength="160">' + escapeHtml(editModal.activity) + '</textarea>' +
       '<label class="modal-check"><input id="edit-anon-inp" type="checkbox"' + (editModal.isAnonymous ? ' checked' : '') + '><span>Скрыть детали от других</span></label>' +
@@ -1493,9 +1603,10 @@ function render() {
     html += '<div class="modal-bg" onclick="if(event.target===this)closeModal()">' +
       '<div class="modal"><h3>предложить время</h3><p>' + escapeHtml(modal.dateStr) + '</p>' +
       '<div class="modal-times">' +
-      '<label>Начало<input id="start-inp" type="time" step="300" value="' + escapeHtml(modal.startTime || '') + '"></label>' +
-      '<label>Конец<input id="end-inp" type="time" step="300" value="' + escapeHtml(modal.endTime || '') + '"></label>' +
+      '<label>Начало<input id="start-inp" type="time" step="300" value="' + escapeHtml(modal.startTime || '') + '" oninput="updateBookingTzHint()"></label>' +
+      '<label>Конец<input id="end-inp" type="time" step="300" value="' + escapeHtml(modal.endTime || '') + '" oninput="updateBookingTzHint()"></label>' +
       '</div>' +
+      '<div class="tz-convert" id="booking-tz-hint"></div>' +
       '<input id="name-inp" type="text" placeholder="кто ты?" maxlength="40" onkeydown="if(event.key===\'Enter\')confirmBookingForm()">' +
       '<textarea id="activity-inp" placeholder="что хочешь поделать" maxlength="160"></textarea>' +
       '<label class="modal-check"><input id="anon-inp" type="checkbox"><span>скрыть детали от других</span></label>' +
@@ -1507,6 +1618,9 @@ function render() {
   }
 
   root.innerHTML = html;
+  renderTzBadge();
+  updateBookingTzHint();
+  updateEditTzHint();
 }
 
 </script>
