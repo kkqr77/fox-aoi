@@ -245,18 +245,13 @@
 
   <div id="gate">
     <div class="disp">Общее время</div>
-    <p>Пароль, чтобы открыть общий график</p>
-    <input id="gate-inp" type="password" placeholder="Пароль">
-    <div id="gate-err">Неверный пароль</div>
-    <button id="gate-btn">Войти</button>
-    <div style="display:flex;align-items:center;gap:10px;margin:16px 0;color:var(--muted);font-size:11.5px;">
-      <div style="flex:1;height:1px;background:var(--line)"></div>или<div style="flex:1;height:1px;background:var(--line)"></div>
-    </div>
+    <p>Доступ только для админа</p>
+    <div id="gate-err"></div>
     <button id="google-btn" onclick="loginGoogle()" style="width:100%;background:var(--bg-alt);color:var(--ink);border:1px solid var(--line);border-radius:10px;padding:11px;font-size:14px;cursor:pointer;font-family:inherit;display:flex;align-items:center;justify-content:center;gap:8px;">
       <svg width="16" height="16" viewBox="0 0 48 48"><path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3c-1.6 4.7-6.1 8-11.3 8-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.8 1.1 8 3l6-6C34.6 5.1 29.6 3 24 3 12.4 3 3 12.4 3 24s9.4 21 21 21 21-9.4 21-21c0-1.4-.1-2.8-.4-4.5z"/><path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.5 16 18.9 13 24 13c3.1 0 5.8 1.1 8 3l6-6C34.6 5.1 29.6 3 24 3 16 3 9.1 7.6 6.3 14.7z"/><path fill="#4CAF50" d="M24 45c5.5 0 10.4-1.9 14.3-5.1l-6.6-5.6C29.6 36 26.9 37 24 37c-5.2 0-9.6-3.3-11.3-8l-6.5 5C9.1 40.4 16 45 24 45z"/><path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.3-2.2 4.3-4.1 5.7l6.6 5.6C41.5 36.3 45 30.8 45 24c0-1.4-.1-2.8-.4-4.5z"/></svg>
       Войти через Google
     </button>
-    <div style="font-size:11px;color:var(--muted);margin-top:8px;">быстрый вход для Вовы — привязан к его аккаунту</div>
+    <div style="font-size:11px;color:var(--muted);margin-top:8px;">Вход только через Google-аккаунт администратора.</div>
   </div>
 
   <div id="root" style="display:none"><div class="loader">секунду...</div></div>
@@ -271,12 +266,8 @@
 // ============================================================
 // CONFIG
 // ============================================================
-// Отдельная учётная запись для дуо-планировщика (не пересекается с гостевым
-// входом основного сайта). Создать пользователя и пароль нужно один раз
-// в Firebase Console -> Authentication -> Add user. Пароль знаете только вы двое.
-var DUO_EMAIL = 'love@us.xyz';
-// Тот же Google-аккаунт, что уже привязан как админ на основном сайте (fox-aoi) —
-// используем его как быстрый вход для Вовы на дуо-планировщике.
+// Доступ к дуо-планировщику только через Google-аккаунт администратора.
+// Тот же UID, что привязан как админ на основном сайте (fox-aoi).
 var VOVA_UID = '4tQbxe4uHbeZ11apRGhBdl9UzSt2';
 
 var MIN_WINDOW_MIN = 30;      // минимальная длительность общего времени, чтобы его показывать
@@ -338,11 +329,6 @@ var saveStatusType = '';
 // ============================================================
 // Gate
 // ============================================================
-document.getElementById('gate-btn').addEventListener('click', checkGate);
-document.getElementById('gate-inp').addEventListener('keydown', function(e){
-  if (e.key === 'Enter') checkGate();
-});
-
 function loginGoogle() {
   var btn = document.getElementById('google-btn');
   var err = document.getElementById('gate-err');
@@ -350,10 +336,10 @@ function loginGoogle() {
   err.style.display = 'none';
   auth.signInWithPopup(new firebase.auth.GoogleAuthProvider())
     .then(function(result){
-      // через Google пускаем только админа; остальные входят паролем
+      // пускаем только Google-аккаунт администратора
       if (!result.user || result.user.uid !== VOVA_UID) {
         return auth.signOut().then(function(){
-          err.textContent = 'Этот Google-аккаунт не админ. Войдите паролем.';
+          err.textContent = 'Этот Google-аккаунт не админ.';
           err.style.display = 'block';
           if (btn) btn.disabled = false;
         });
@@ -364,26 +350,6 @@ function loginGoogle() {
     .catch(function(e){
       if (btn) btn.disabled = false;
       if (e.code !== 'auth/popup-closed-by-user') alert('Ошибка входа через Google: ' + e.message);
-    });
-}
-
-function checkGate() {
-  var password = document.getElementById('gate-inp').value;
-  var btn = document.getElementById('gate-btn');
-  btn.disabled = true;
-  btn.textContent = '...';
-  document.getElementById('gate-err').style.display = 'none';
-  document.getElementById('gate-inp').style.borderColor = '';
-
-  firebase.auth().signInWithEmailAndPassword(DUO_EMAIL, password)
-    .then(function(){
-      openApp();
-    })
-    .catch(function(){
-      document.getElementById('gate-err').style.display = 'block';
-      document.getElementById('gate-inp').style.borderColor = '#b33f3f';
-      btn.disabled = false;
-      btn.textContent = 'Войти';
     });
 }
 
@@ -417,18 +383,16 @@ firebase.auth().setPersistence(firebase.auth.Auth.Persistence.LOCAL)
   .catch(function(){ /* если IndexedDB недоступна (приватный режим и т.п.) — останется персистентность по умолчанию */ })
   .then(function(){
     auth.onAuthStateChanged(function(user){
-      // пускаем только гостевой аккаунт и админа — как в правилах БД
-      if (user && user.email !== DUO_EMAIL && user.uid !== VOVA_UID) {
-        auth.signOut();
+      // доступ только у Google-аккаунта администратора
+      if (!user || user.uid !== VOVA_UID) {
+        if (user) auth.signOut();
+        currentUser = null;
+        document.getElementById('root').style.display = 'none';
+        document.getElementById('gate').style.display = 'block';
         return;
       }
       currentUser = user;
-      if (user) {
-        openApp();
-      } else {
-        document.getElementById('root').style.display = 'none';
-        document.getElementById('gate').style.display = 'block';
-      }
+      openApp();
       render();
     });
   });
