@@ -330,9 +330,10 @@ function setSort(val) { sortBy = val; render(); }
 // ─────────────────────────────────────────
 // RESERVE ACTIONS
 // ─────────────────────────────────────────
-function openReserveModal(itemId, itemName) {
+function openReserveModal(itemId) {
   if (reservations[itemId]) return;
-  reserveModal = { itemId: itemId, itemName: itemName };
+  var item = items[itemId] || {};
+  reserveModal = { itemId: itemId, itemName: item.name || '' };
   render();
   setTimeout(function() { var el = document.getElementById('res-name'); if (el) el.focus(); }, 50);
 }
@@ -523,6 +524,11 @@ function escapeHtml(s) {
 }
 function attrSafe(s) {
   return escapeHtml(s).replace(/'/g, '&#39;');
+}
+// Ссылки из базы пускаем только с http(s):, иначе javascript:/data: и т.п.
+function safeUrl(url) {
+  var u = String(url || '').trim();
+  return /^https?:\/\//i.test(u) ? u : '';
 }
 function formatPrice(price, currency) {
   if (!price && price !== 0) return '';
@@ -825,12 +831,12 @@ function renderCard(id, item) {
 
   // Actions
   html += '<div class="item-actions">';
-  if (item.url) {
-    html += '<a class="btn-link" href="' + attrSafe(item.url) + '" target="_blank" rel="noopener noreferrer">Посмотреть →</a>';
+  var linkUrl = safeUrl(item.url);
+  if (linkUrl) {
+    html += '<a class="btn-link" href="' + attrSafe(linkUrl) + '" target="_blank" rel="noopener noreferrer">Посмотреть →</a>';
   }
   if (!reserved) {
-    var safeName = attrSafe(item.name);
-    html += '<button class="btn-reserve" onclick="openReserveModal(\'' + id + '\',\'' + safeName + '\')">🎁 Забронировать</button>';
+    html += '<button class="btn-reserve" onclick="openReserveModal(\'' + id + '\')">🎁 Забронировать</button>';
   } else if (!isAdmin()) {
     html += '<span class="reserved-label">Занято</span>';
   }

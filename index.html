@@ -1105,7 +1105,7 @@ function render() {
   html += '<div style="display:flex;align-items:center;gap:8px;flex-shrink:0">';
   html += '<a href="https://kkqr77.github.io/fox-aoi/wishlist/" style="text-decoration:none;"><button class="auth-btn" style="background:#f5f0ff;border-color:#d8b4fe;color:#7c3aed;white-space:nowrap">🎁 Вишлист</button></a>';
   if (currentUser) {
-    html += '<button class="auth-btn logged" onclick="logout()">✓ ' + (currentUser.displayName || 'Выйти') + ' — выйти</button>';
+    html += '<button class="auth-btn logged" onclick="logout()">✓ ' + escapeHtml(currentUser.displayName || 'Выйти') + ' — выйти</button>';
   } else {
     html += '<button class="auth-btn" onclick="login()">Вход для админа</button>';
   }
